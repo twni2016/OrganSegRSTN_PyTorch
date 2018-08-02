@@ -282,9 +282,8 @@ class RSTN(nn.Module):
 		if self.no_forward == True and self.TEST == 'F':
 			cropped_image = torch.zeros_like(cropped_image).cuda()
 
-		crop_info = np.zeros((1, 2, 4), dtype = np.int16)
-		crop_info[0, 0] = bbox
-		crop_info[0, 1] = prob_map.shape
+		crop_info = np.zeros((1, 4), dtype = np.int16)
+		crop_info[0] = bbox
 		crop_info = torch.from_numpy(crop_info).cuda()
 
 		return cropped_image, crop_info
@@ -308,7 +307,7 @@ class RSTN(nn.Module):
 	def uncrop(self, crop_info, cropped_image, image):
 		uncropped_image = torch.ones_like(image).cuda()
 		uncropped_image *= (-9999999)
-		bbox = crop_info[0, 0]
+		bbox = crop_info[0]
 		uncropped_image[:, :, bbox[0].item(): bbox[1].item(), bbox[2].item(): bbox[3].item()] = cropped_image
 		return uncropped_image
 

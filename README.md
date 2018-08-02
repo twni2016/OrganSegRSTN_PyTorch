@@ -1,8 +1,15 @@
 # OrganSegRSTN_PyTorch: an end-to-end coarse-to-fine organ segmentation framework in PyTorch
 
-**This is an re-implementation of OrganSegRSTN in PyTorch 0.4.**
+**This is a re-implementation of OrganSegRSTN in PyTorch 0.4.**
 
-version 0.1 - Jul 31 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.2 - Aug 2 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+
+**NOTE: what's new in version 0.2:**
+
+-  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
+  - give instructions in section 4.5.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
+- `training.py` : now trains by *iterations* instead of *epoches*, and learning rate will decay in `J` mode every 10k iterations.
+  - performance of current version is **84.3%** in NIH dataset, which is *slightly lower* than **84.4-84.6%** in CAFFE implementation.
 
 Original version of OrganSegRSTN is written in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -37,12 +44,12 @@ Improvements:
 - We merge `indiv_training.py`, `joint_training.py` into `training.py`
 - We merge all `*.prototxt` to `model.py`
 - Our code runs almost **twice faster** than original one in CAFFE. 
+- The *minimum* of DSC in test cases is **a little higher** (63.4%) than original minimum (62.8%).
 
 TODO list:
 
-- The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.0% - 84.3%) than original one in CAFFE (84.4% - 84.6%). 
+- The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.3%) than original one in CAFFE (84.4% - 84.6%). 
   - We are trying different models and weight initialization for higher performance.
-- We will re-implement two faster functions "post-processing" and "DSC_computation" in C for python3.
 - `coarse_fusion.py` , `oracle_fusion.py`, `oracle_testing.py` will be released soon.
 - The pretrained model for our RSTN in PyTorch and `logs/` will be released soon.
 
@@ -68,7 +75,7 @@ It is highly recommended to use one or more modern GPUs for computation.
     Using CPUs will take at least 50x more time in computation.
 
 **We provide an easy implementation in which the training stages has only 1 fine-scaled iteration.
-  If you hope to add more, please modify the prototxt file accordingly.
+  If you hope to add more, please modify the `model.py` accordingly.
   As we said in the paper, our strategy of using 1 stage in training and multiple iterations in testing works very well.**
 
 ## 2. File List
@@ -91,6 +98,7 @@ It is highly recommended to use one or more modern GPUs for computation.
 | `run.sh`                    | the main program to be called in bash shell         |
 | `utils.py`                  | the common functions                                |
 |                             |                                                     |
+| **SWIG_fast_functions/**               | C codes for acceleration in testing process   |
 
 
 ## 3. Installation
@@ -176,10 +184,11 @@ You can run all the following modules with **one** execution!
 
 #### 4.3 Training (requires: 4.2)
 
-###### 4.3.1 Check `run.sh` and set `$TRAINING_PLANE` and `$TRAINING_GPU`.
+###### 4.3.1 Check `run.sh` and set `$TRAINING_PLANE` and `$TRAINING_GPU` and `$CURRENT_FOLD`.
 
     You need to run X|Y|Z planes individually, so you can use 3 GPUs in parallel.
     You can also set TRAINING_PLANE=A, so that three planes are trained orderly in one GPU.
+    You need to set CURRENT_FOLD in {0, 1, ..., FOLDS-1}, which means the testing fold is $CURRENT_FOLD, and training folds are the rest.
 
 ###### 4.3.2 Set `$ENABLE_TRAINING=1` and run this script.
 
@@ -249,6 +258,26 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
     This function calls both fine-scaled testing and fusion codes, so both GPU and CPU are used.
         In our future release, we will implement post-processing in C for acceleration.
 
+###### 4.5.3 how to compile `fast_functions` for other python version?
+
+We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_testing.py`, which can be only run in python 3.6 environment. But we also support other python version 3+, here is the **instructions**:
+
+- First, check your default `python3` version by `ls -l /usr/bin/python*`，ensure that ` /usr/bin/python3` is linked to the `python3.*` version you want. Otherwise, please download `python3.*` you want and `ln -s /usr/bin/python3.* /usr/bin/python`.
+
+- Then go to `SWIG_fast_functions` directory, run
+
+  ````bash
+  swig -python -py3 fast_functions.i
+  python3 setup.py build_ext --inplace
+  mv _fast_functions.cpython-3*m-x86_64-linux-gnu.so _fast_functions.so # * depends on py3.x
+  python test.py # test
+  cp {_fast_functions.so,fast_functions.py} ../OrganSegRSTN/ # no space in {}
+  ````
+
+- Finally, you can run `coarse2fine_testing.py` successfully.
+
+  - **If fails,** you can comment `post_processing` and `DSC_computation` in *ff*, and **uncomment those in *vanilla python*.** These functions in vanilla python can be run successfully, but slower than C re-implementation.
+
 **NOTE**: currently we set the maximal rounds of iteration to be 10 in order to observe the convergence.
     Most often, it reaches an inter-DSC of >99% after 3-5 iterations.
     If you hope to save time, you can slight modify the codes in coarse2fine_testing.py.
@@ -260,7 +289,9 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.1.
+The current version is v0.2.
+
+**v0.1: init version.**
 
 ## 6. Contact Information
 

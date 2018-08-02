@@ -12,7 +12,7 @@ from model import *
 
 if __name__ == '__main__':
 	data_path = sys.argv[1]
-	current_fold = int(sys.argv[2])
+	current_fold = sys.argv[2]
 	organ_number = int(sys.argv[3])
 	low_range = int(sys.argv[4])
 	high_range = int(sys.argv[5])
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 		raise RuntimeError('Please Download <http://drive.google.com/uc?id=0B9P1L--7Wd2vT0FtdThWREhjNkU> from the Internet ...')
 
 	from Data import DataLayer
-	training_set = DataLayer(data_path=data_path, current_fold=current_fold, organ_number=organ_number, \
+	training_set = DataLayer(data_path=data_path, current_fold=int(current_fold), organ_number=organ_number, \
 		low_range=low_range, high_range=high_range, slice_threshold=slice_threshold, slice_thickness=slice_thickness, \
 		organ_ID=organ_ID, plane=plane)
 
@@ -55,10 +55,9 @@ if __name__ == '__main__':
 	max_iterations = {'S': separate_iterations, \
 					  'I': max_iterations1 - separate_iterations, \
 					  'J': max_iterations1 }
-	print(plane, len(trainloader))
-	print(max_iterations)
+	print(current_fold + plane, len(trainloader))
+	print(max_iterations, separate_iterations)
 	
-
 	RSTN_ = {}
 	RSTN_snapshot = {}
 	for mode in ['S', 'I', 'J']:
@@ -115,14 +114,16 @@ if __name__ == '__main__':
 
 		RSTN_[mode] = RSTN_[mode].cuda()
 		RSTN_[mode].train()
-		epoch = math.ceil(max_iterations[mode] / (batch_size * len(trainloader)))
+		iteration = 0
+		epoch = 0
 
 		try: 
-			for e in range(epoch):
+			while (True):
 				total_loss = 0.0
+				epoch += 1
 				start = time.time()
-				# scheduler.step() 
 				for index, (image, label) in enumerate(trainloader):
+					iteration += 1
 					start_it = time.time()        
 					optimizer.zero_grad()
 					image, label = image.cuda().float(), label.cuda().float()
@@ -132,18 +133,26 @@ if __name__ == '__main__':
 					total_loss += loss.item()
 					loss.backward()
 					optimizer.step()
-					print (plane + mode, "Epoch[%02d/%d], Iter[%04d], Train DSC %.4f Time Elapsed %.4fs" \
-							%(e+1, epoch, index, 1 - loss.item(), time.time()-start_it)) 
-				
-				print (plane + mode, "Epoch[%02d/%d], Train Avg DSC: %.4f, Time elapsed %.2fs" \
-						%(e+1, epoch, 1 - total_loss/len(trainloader), time.time()-start))
+					print(current_fold + plane + mode, "Iter[%05d], Train DSC %.4f Time Elapsed %.2fs" \
+							%(iteration, 1 - loss.item(), time.time()-start_it))
+					if mode == 'J' and iteration % separate_iterations == 0:
+						print('lr decay')
+						for param_group in optimizer.param_groups:
+							param_group['lr'] *= 0.5
+					if iteration >= max_iterations[mode]:
+						break
+
+				print(current_fold + plane + mode, "Epoch[%d], Train Avg DSC: %.4f, Time elapsed %.2fs" \
+						%(epoch, 1 - total_loss / (index + 1), time.time()-start))	
+				if iteration >= max_iterations[mode]:
+					break
 
 		except KeyboardInterrupt:
 			print('!' * 10 , 'save before quitting ...')
 		finally:
-			snapshot_name = 'FD' + str(current_fold) + ':' + \
+			snapshot_name = 'FD' + current_fold + ':' + \
 				plane + mode + str(slice_thickness) + '_' + str(organ_ID) + '_' + timestamp
 			RSTN_snapshot[mode] = os.path.join(snapshot_path, snapshot_name) + '.pkl'
 			torch.save(RSTN_[mode].state_dict(), RSTN_snapshot[mode])
-			print('#' * 10 , 'end of ' + plane + mode + ' training stage!')
+			print('#' * 10 , 'end of ' + current_fold + plane + mode + ' training stage!')
 
