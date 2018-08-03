@@ -1,12 +1,6 @@
-import numpy as np
 import os
 import sys
 import time
-import random
-import math
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from utils import *
 from model import *
 
@@ -58,15 +52,13 @@ if __name__ == '__main__':
 	print(current_fold + plane, len(trainloader))
 	print(max_iterations, separate_iterations)
 	
-	RSTN_model = RSTN(crop_margin=crop_margin, \
-					crop_prob=crop_prob, crop_sample_batch=crop_sample_batch)
 	RSTN_snapshot = {}
 	for mode in ['S', 'I', 'J']:
-
-		RSTN_dict = RSTN_model.state_dict()
-		print('RSTN_' + mode + '_dict', RSTN_dict.keys())
+		RSTN_model = RSTN(crop_margin=crop_margin, \
+					crop_prob=crop_prob, crop_sample_batch=crop_sample_batch)
 
 		if mode == 'S':
+			RSTN_dict = RSTN_model.state_dict()
 			pretrained_model = FCN8s(n_class=21)
 			pretrained_model.load_state_dict(torch.load(FCN_weights))
 			pretrained_dict = pretrained_model.state_dict()
@@ -84,8 +76,12 @@ if __name__ == '__main__':
 			RSTN_model.load_state_dict(RSTN_dict)
 			print(plane + mode, 'load pre-trained FCN8s model successfully!')
 		
-		elif mode in ['I', 'J']:
-			print(plane + mode, 'load previous mode model successfully!')
+		elif mode == 'I':
+			RSTN_model.load_state_dict(torch.load(RSTN_snapshot['S']))
+			print(plane + mode, 'load S model successfully!')
+		elif mode == 'J':
+			RSTN_model.load_state_dict(torch.load(RSTN_snapshot['I']))
+			print(plane + mode, 'load I model successfully!')
 		else:
 			raise ValueError("wrong value of mode, should be in ['S', 'I', 'J']")
 
@@ -154,5 +150,8 @@ if __name__ == '__main__':
 				plane + mode + str(slice_thickness) + '_' + str(organ_ID) + '_' + timestamp
 			RSTN_snapshot[mode] = os.path.join(snapshot_path, snapshot_name) + '.pkl'
 			torch.save(RSTN_model.state_dict(), RSTN_snapshot[mode])
+			# delete the model to release GPU memory
+			del RSTN_model
+			torch.cuda.empty_cache()
 			print('#' * 10 , 'end of ' + current_fold + plane + mode + ' training stage!')
 

@@ -2,12 +2,12 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0**
 
-version 0.3 - Aug 2 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.3.1 - Aug 3 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.3:**
+**NOTE: what's new in version 0.3.1:**
 
-- Three training models in `S,I,J` mode respectively are merged into one model. Now **GPU memory will not be increased sigificantly** when mode changes. 
-  - In NIH dataset, mode `J` occupies 6GB GPU memory approximately, less than 10GB previously.
+- Now **GPU memory will not be increased sigificantly** when mode changes, because we explicitly delete the previous model and release GPU memory cache.
+  - In NIH dataset, mode `J` occupies < 7GB GPU memory approximately, less than 10GB in previous version.
 
 
 Original version of OrganSegRSTN is written in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
@@ -300,7 +300,7 @@ Congratulations! You have finished the entire process. Check your results now!
 
 The current version is v0.3.
 
-**v0.2: **
+**v0.2:**
 
 -  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
    -  give instructions in section 4.5.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
