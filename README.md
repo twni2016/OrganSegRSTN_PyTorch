@@ -1,15 +1,14 @@
 # OrganSegRSTN_PyTorch: an end-to-end coarse-to-fine organ segmentation framework in PyTorch
 
-**This is a re-implementation of OrganSegRSTN in PyTorch 0.4.**
+**This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0**
 
-version 0.2 - Aug 2 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.3 - Aug 2 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.2:**
+**NOTE: what's new in version 0.3:**
 
--  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
-  - give instructions in section 4.5.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
-- `training.py` : now trains by *iterations* instead of *epoches*, and learning rate will decay in `J` mode every 10k iterations.
-  - performance of current version is **84.3%** in NIH dataset, which is *slightly lower* than **84.4-84.6%** in CAFFE implementation.
+- Three training models in `S,I,J` mode respectively are merged into one model. Now **GPU memory will not be increased sigificantly** when mode changes. 
+  - In NIH dataset, mode `J` occupies 6GB GPU memory approximately, less than 10GB previously.
+
 
 Original version of OrganSegRSTN is written in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -114,7 +113,9 @@ It is highly recommended to use one or more modern GPUs for computation.
 
 #### 3.2 PyTorch
 
-###### 3.2.1 Download a PyTorch library from https://pytorch.org/ . We are using PyTorch 0.4.0 .
+###### 3.2.1 Download a PyTorch library from https://pytorch.org/previous-versions/ . We are using PyTorch 0.4.0 .
+
+**Please ensure that you install PyTorch 0.4.0 version, because our code is incompatible with the newest version 0.4.1.**
 
 
 ## 4. Usage
@@ -199,7 +200,7 @@ You can run all the following modules with **one** execution!
         each 20 iterations cost ~10s on a Titan-X Pascal GPU, or ~8s on a Titan-Xp GPU.
         As described in the code, we need ~80K iterations, which take less than 5 GPU-hours.
 
-###### 4.3.3 Important notes on initialization and model convergence.
+###### 4.3.3 Important notes on initialization, model mode and model convergence.
 
 ![](icon.png)
 ![](icon.png)
@@ -215,6 +216,14 @@ In the previous step of data preparation, we provide a scratch model for the NIH
 in which both the coarse and fine stages are initialized using the weights of an FCN-8s model
 (please refer to the [FCN project](https://github.com/shelhamer/fcn.berkeleyvision.org)).
 This model was pre-trained on PASCALVOC.
+
+###### What does `mode` in RSTN stand for?
+
+We train RSTN model in **three sequential modes `S,I,J`**  in order to make model converge well.
+
+- `S` stands for Separate. The input pair (image, label) of fine FCN is *irrelevant* to the outputs of coarse FCN.
+- `I` stands for Individual. The input (image) of fine FCN is *relevant* to the outputs of coarse FCN, but label is *irrelevant*.
+- `J` stands for Joint. The input pair (image, label) of fine FCN is *relevant* to the outputs of coarse FCN.
 
 ###### How to determine if a model converges and works well?
 
@@ -262,7 +271,7 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
 
 We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_testing.py`, which can be only run in python 3.6 environment. But we also support other python version 3+, here is the **instructions**:
 
-- First, check your default `python3` version by `ls -l /usr/bin/python*`，ensure that ` /usr/bin/python3` is linked to the `python3.*` version you want. Otherwise, please download `python3.*` you want and `ln -s /usr/bin/python3.* /usr/bin/python`.
+- First, check your default `python3` version by `ls -l /usr/bin/python*`，ensure that ` /usr/bin/python3` is linked to the `python3.*` version you want. Otherwise, please download `python3.*` you want and `ln -s /usr/bin/python3.* /usr/bin/python3`.
 
 - Then go to `SWIG_fast_functions` directory, run
 
@@ -289,9 +298,16 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.2.
+The current version is v0.3.
 
-**v0.1: init version.**
+**v0.2: **
+
+-  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
+   -  give instructions in section 4.5.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
+-  `training.py` : now trains by *iterations* instead of *epoches*, and learning rate will decay in `J` mode every 10k iterations.
+   -  performance of current version is **84.3%** in NIH dataset, which is *slightly lower* than **84.4-84.6%** in CAFFE implementation.
+
+**v0.1:** init version.
 
 ## 6. Contact Information
 

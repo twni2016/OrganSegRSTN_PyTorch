@@ -110,7 +110,7 @@ net_ = {}
 for plane in ['X', 'Y', 'Z']:
 	net_[plane] = []
 	for t in range(len(fine_iteration)):
-		net = RSTN(mode='J', crop_margin=crop_margin, TEST='F').cuda()
+		net = RSTN(crop_margin=crop_margin, TEST='F').cuda()
 		net.load_state_dict(torch.load(fine_snapshot_[plane][t]))
 		net.eval()
 		net_[plane].append(net)

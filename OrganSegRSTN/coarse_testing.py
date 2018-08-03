@@ -70,7 +70,7 @@ for t in range(len(snapshot)):
 			finished = False
 			break
 	if not finished:
-		net = RSTN(mode='J', crop_margin=crop_margin, crop_prob=crop_prob, \
+		net = RSTN(crop_margin=crop_margin, crop_prob=crop_prob, \
 					crop_sample_batch=crop_sample_batch, TEST='C').cuda()
 		net.load_state_dict(torch.load(snapshot[t]))
 		net.eval()

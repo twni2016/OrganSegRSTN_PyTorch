@@ -58,12 +58,12 @@ if __name__ == '__main__':
 	print(current_fold + plane, len(trainloader))
 	print(max_iterations, separate_iterations)
 	
-	RSTN_ = {}
+	RSTN_model = RSTN(crop_margin=crop_margin, \
+					crop_prob=crop_prob, crop_sample_batch=crop_sample_batch)
 	RSTN_snapshot = {}
 	for mode in ['S', 'I', 'J']:
-		RSTN_[mode] = RSTN(mode=mode, crop_margin=crop_margin, \
-							crop_prob=crop_prob, crop_sample_batch=crop_sample_batch)
-		RSTN_dict = RSTN_[mode].state_dict()
+
+		RSTN_dict = RSTN_model.state_dict()
 		print('RSTN_' + mode + '_dict', RSTN_dict.keys())
 
 		if mode == 'S':
@@ -81,28 +81,26 @@ if __name__ == '__main__':
 			RSTN_dict.update(pretrained_dict_coarse) 
 			RSTN_dict.update(pretrained_dict_fine)
 			# 3. load the new state dict
-			RSTN_[mode].load_state_dict(RSTN_dict)
+			RSTN_model.load_state_dict(RSTN_dict)
+			print(plane + mode, 'load pre-trained FCN8s model successfully!')
 		
-		elif mode == 'I':
-			RSTN_[mode].load_state_dict(torch.load(RSTN_snapshot['S']))
-		elif mode == 'J':
-			RSTN_[mode].load_state_dict(torch.load(RSTN_snapshot['I']))
+		elif mode in ['I', 'J']:
+			print(plane + mode, 'load previous mode model successfully!')
 		else:
 			raise ValueError("wrong value of mode, should be in ['S', 'I', 'J']")
 
-		print(plane + mode, 'load pre-trained model successfully!')
-		model_parameters = filter(lambda p: p.requires_grad, RSTN_[mode].parameters())
+		model_parameters = filter(lambda p: p.requires_grad, RSTN_model.parameters())
 		params = sum([np.prod(p.size()) for p in model_parameters])
 		print('model parameters:', params)
 
 		optimizer = torch.optim.SGD(
 			[
-				{'params': get_parameters(RSTN_[mode], coarse=True, bias=False)},
-				{'params': get_parameters(RSTN_[mode], coarse=True, bias=True),
+				{'params': get_parameters(RSTN_model, coarse=True, bias=False)},
+				{'params': get_parameters(RSTN_model, coarse=True, bias=True),
 				'lr': learning_rate1 * 2, 'weight_decay': 0},
-				{'params': get_parameters(RSTN_[mode], coarse=False, bias=False),
+				{'params': get_parameters(RSTN_model, coarse=False, bias=False),
 				'lr': learning_rate1 * 10},
-				{'params': get_parameters(RSTN_[mode], coarse=False, bias=True),
+				{'params': get_parameters(RSTN_model, coarse=False, bias=True),
 				'lr': learning_rate1 * 20, 'weight_decay': 0}	
 			],
 			lr=learning_rate1,
@@ -112,8 +110,8 @@ if __name__ == '__main__':
 		criterion = DSC_loss()
 		COARSE_WEIGHT = 1 / 3
 
-		RSTN_[mode] = RSTN_[mode].cuda()
-		RSTN_[mode].train()
+		RSTN_model = RSTN_model.cuda()
+		RSTN_model.train()
 		iteration = 0
 		epoch = 0
 
@@ -127,14 +125,16 @@ if __name__ == '__main__':
 					start_it = time.time()        
 					optimizer.zero_grad()
 					image, label = image.cuda().float(), label.cuda().float()
-					coarse_prob, fine_prob = RSTN_[mode](image, label)
+					coarse_prob, fine_prob = RSTN_model(image, label, mode=mode)
 					loss = COARSE_WEIGHT * criterion(coarse_prob, label) \
 							+ (1 - COARSE_WEIGHT) * criterion(fine_prob, label)
 					total_loss += loss.item()
 					loss.backward()
 					optimizer.step()
+					
 					print(current_fold + plane + mode, "Iter[%05d], Train DSC %.4f Time Elapsed %.2fs" \
 							%(iteration, 1 - loss.item(), time.time()-start_it))
+					del image, label, coarse_prob, fine_prob, loss
 					if mode == 'J' and iteration % separate_iterations == 0:
 						print('lr decay')
 						for param_group in optimizer.param_groups:
@@ -153,6 +153,6 @@ if __name__ == '__main__':
 			snapshot_name = 'FD' + current_fold + ':' + \
 				plane + mode + str(slice_thickness) + '_' + str(organ_ID) + '_' + timestamp
 			RSTN_snapshot[mode] = os.path.join(snapshot_path, snapshot_name) + '.pkl'
-			torch.save(RSTN_[mode].state_dict(), RSTN_snapshot[mode])
+			torch.save(RSTN_model.state_dict(), RSTN_snapshot[mode])
 			print('#' * 10 , 'end of ' + current_fold + plane + mode + ' training stage!')
 

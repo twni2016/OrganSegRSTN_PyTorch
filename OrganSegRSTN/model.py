@@ -2,7 +2,6 @@ import numpy as np
 import random
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 class FCN8s(nn.Module):
 	def __init__(self, n_class=3):
@@ -159,10 +158,9 @@ class FCN8s(nn.Module):
 		return h
 
 class RSTN(nn.Module):
-	def __init__(self, mode, crop_margin=20, crop_prob=0.5, \
+	def __init__(self, crop_margin=20, crop_prob=0.5, \
 					crop_sample_batch=1, n_class=3, TEST=None):
 		super(RSTN, self).__init__()
-		self.mode = mode
 		self.TEST = TEST
 		self.margin = crop_margin
 		self.prob = crop_prob
@@ -188,47 +186,50 @@ class RSTN(nn.Module):
 				mod.weight.data.zero_()
 				mod.bias.data = torch.tensor([1.0, 1.5, 2.0])
 
-	def forward(self, image, label=None, score=None, mask=None):
+	def forward(self, image, label=None, mode=None, score=None, mask=None):
 		if self.TEST is None:
-			assert label is not None and score is None and mask is None
+			assert label is not None and mode is not None \
+				and score is None and mask is None
 			# Coarse-scaled Network
 			h = image
 			h = self.coarse_model(h)
-			h = F.sigmoid(h)
+			h = torch.sigmoid(h)
 			coarse_prob = h
 			# Saliency Transformation Module
 			h = self.relu_saliency1(self.saliency1(h))
 			h = self.saliency2(h)
 			saliency = h
 
-			if self.mode == 'S':
+			if mode == 'S':
 				cropped_image, crop_info = self.crop(label, image)
-			elif self.mode == 'I':
+			elif mode == 'I':
 				cropped_image, crop_info = self.crop(label, image * saliency)
-			elif self.mode == 'J':
+			elif mode == 'J':
 				cropped_image, crop_info = self.crop(coarse_prob, image * saliency, label)
 			else:
 				raise ValueError("wrong value of mode, should be in ['S', 'I', 'J']")
-			
+
 			# Fine-scaled Network
 			h = cropped_image
 			h = self.fine_model(h)
 			h = self.uncrop(crop_info, h, image)
-			h = F.sigmoid(h)
+			h = torch.sigmoid(h)
 			fine_prob = h
 			return coarse_prob, fine_prob
 
 		elif self.TEST == 'C':
-			assert label is None and score is None and mask is None
+			assert label is None and mode is None and \
+				score is None and mask is None
 			# Coarse-scaled Network
 			h = image
 			h = self.coarse_model(h)
-			h = F.sigmoid(h)
+			h = torch.sigmoid(h)
 			coarse_prob = h
 			return coarse_prob
 		
 		elif self.TEST == 'F':
-			assert label is None and score is not None and mask is not None
+			assert label is None and mode is None \
+				and score is not None and mask is not None
 			# Saliency Transformation Module
 			h = score
 			h = self.relu_saliency1(self.saliency1(h))
@@ -239,7 +240,7 @@ class RSTN(nn.Module):
 			h = cropped_image
 			h = self.fine_model(h)
 			h = self.uncrop(crop_info, h, image)
-			h = F.sigmoid(h)
+			h = torch.sigmoid(h)
 			fine_prob = h
 			return fine_prob
 
