@@ -1,7 +1,7 @@
 ####################################################################################################
 # RSTN: Recurrent Saliency Transformation Network for organ segmentation framework                 #
 # This is PyTorch 0.4.0 Python 3.6 verison of OrganSegRSTN in CAFFE Python 2.7 .                   #
-# Author: Tianwei Ni, Lingxi Xie, Huangjie Zheng.                                                  #
+# Author: Tianwei Ni, Huangjie Zheng, Lingxi Xie.                                                  #
 #                                                                                                  #
 # If you use our codes, please cite our paper accordingly:                                         #
 #     Qihang Yu, Lingxi Xie, Yan Wang, Yuyin Zhou, Elliot K. Fishman, Alan L. Yuille,              #
@@ -21,7 +21,7 @@ CURRENT_FOLD=0
 CURRENT_GPU=$CURRENT_FOLD
 
 ####################################################################################################
-# turn on these swithes to execute each module
+# turn on these switches to execute each module
 ENABLE_INITIALIZATION=0
 ENABLE_TRAINING=0
 ENABLE_COARSE_TESTING=0
@@ -68,11 +68,10 @@ LEARNING_RATE_M2=10
 TRAINING_MARGIN=20
 TRAINING_PROB=0.5
 TRAINING_SAMPLE_BATCH=1
-TRAINING_STEP=10000
-TRAINING_MAX_ITERATIONS1=40000
-TRAINING_MAX_ITERATIONS2=40000
-TRAINING_FRACTION=0.25
-TRAINING_TOTAL_ITERATIONS=$(($TRAINING_MAX_ITERATIONS1+$TRAINING_MAX_ITERATIONS2))
+TRAINING_EPOCH_S=2
+TRAINING_EPOCH_I=6
+TRAINING_EPOCH_J=8
+LR_DECAY_EPOCH_J_STEP=2
 if [ "$ENABLE_TRAINING" = "1" ]
 then
     TRAINING_TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
@@ -95,8 +94,8 @@ then
             $TRAINING_ORGAN_ID X $TRAINING_GPU \
             $LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 \
             $TRAINING_MARGIN $TRAINING_PROB $TRAINING_SAMPLE_BATCH \
-            $TRAINING_STEP $TRAINING_MAX_ITERATIONS1 $TRAINING_MAX_ITERATIONS2 \
-            $TRAINING_FRACTION $TRAINING_TIMESTAMP 1 2>&1 | tee $TRAINING_LOG
+            $TRAINING_EPOCH_S $TRAINING_EPOCH_I $TRAINING_EPOCH_J \
+            $LR_DECAY_EPOCH_J_STEP $TRAINING_TIMESTAMP 1 2>&1 | tee $TRAINING_LOG
     fi
     if [ "$TRAINING_PLANE" = "Y" ] || [ "$TRAINING_PLANE" = "A" ]
     then
@@ -108,8 +107,8 @@ then
             $TRAINING_ORGAN_ID Y $TRAINING_GPU \
             $LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 \
             $TRAINING_MARGIN $TRAINING_PROB $TRAINING_SAMPLE_BATCH \
-            $TRAINING_STEP $TRAINING_MAX_ITERATIONS1 $TRAINING_MAX_ITERATIONS2 \
-            $TRAINING_FRACTION $TRAINING_TIMESTAMP 1 2>&1 | tee $TRAINING_LOG
+            $TRAINING_EPOCH_S $TRAINING_EPOCH_I $TRAINING_EPOCH_J \
+            $LR_DECAY_EPOCH_J_STEP $TRAINING_TIMESTAMP 1 2>&1 | tee $TRAINING_LOG
     fi
     if [ "$TRAINING_PLANE" = "Z" ] || [ "$TRAINING_PLANE" = "A" ]
     then
@@ -121,8 +120,8 @@ then
             $TRAINING_ORGAN_ID Z $TRAINING_GPU \
             $LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 \
             $TRAINING_MARGIN $TRAINING_PROB $TRAINING_SAMPLE_BATCH \
-            $TRAINING_STEP $TRAINING_MAX_ITERATIONS1 $TRAINING_MAX_ITERATIONS2 \
-            $TRAINING_FRACTION $TRAINING_TIMESTAMP 1 2>&1 | tee $TRAINING_LOG
+            $TRAINING_EPOCH_S $TRAINING_EPOCH_I $TRAINING_EPOCH_J \
+            $LR_DECAY_EPOCH_J_STEP $TRAINING_TIMESTAMP 1 2>&1 | tee $TRAINING_LOG
     fi
 fi
 

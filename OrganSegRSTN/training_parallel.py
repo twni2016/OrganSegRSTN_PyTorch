@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
 	if not os.path.exists(snapshot_path):
 		os.makedirs(snapshot_path)
-	
+
 	FCN_weights = os.path.join(pretrained_model_path, 'fcn8s_from_caffe.pth')
 	if not os.path.isfile(FCN_weights):
 		raise RuntimeError('Please Download <http://drive.google.com/uc?id=0B9P1L--7Wd2vT0FtdThWREhjNkU> from the Internet ...')
@@ -43,16 +43,16 @@ if __name__ == '__main__':
 		low_range=low_range, high_range=high_range, slice_threshold=slice_threshold, slice_thickness=slice_thickness, \
 		organ_ID=organ_ID, plane=plane)
 
-	batch_size = 1
-	os.environ["CUDA_VISIBLE_DEVICES"]= str(GPU_ID)
+	batch_size = 4
+	os.environ["CUDA_VISIBLE_DEVICES"]= '0,1,2,3'
 	trainloader = torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
 	print(current_fold + plane, len(trainloader))
 	print(epoch)
-	
+
 	RSTN_snapshot = {}
 	for mode in ['S', 'I', 'J']:
-		RSTN_model = RSTN(crop_margin=crop_margin, \
-					crop_prob=crop_prob, crop_sample_batch=crop_sample_batch)
+		RSTN_model = nn.DataParallel(RSTN(crop_margin=crop_margin, \
+					crop_prob=crop_prob, crop_sample_batch=crop_sample_batch), device_ids=[0,1,2,3])
 
 		if mode == 'S':
 			RSTN_dict = RSTN_model.state_dict()
@@ -60,19 +60,19 @@ if __name__ == '__main__':
 			pretrained_model.load_state_dict(torch.load(FCN_weights))
 			pretrained_dict = pretrained_model.state_dict()
 			# 1. filter out unnecessary keys
-			pretrained_dict_coarse = {'coarse_model.' + k : v
-					for k, v in pretrained_dict.items() 
-					if 'coarse_model.' + k in RSTN_dict and 'score' not in k}
-			pretrained_dict_fine = {'fine_model.' + k : v
-					for k, v in pretrained_dict.items() 
-					if 'fine_model.' + k in RSTN_dict and 'score' not in k}
+			pretrained_dict_coarse = {'module.coarse_model.' + k : v
+					for k, v in pretrained_dict.items()
+					if 'module.coarse_model.' + k in RSTN_dict and 'score' not in k}
+			pretrained_dict_fine = {'module.fine_model.' + k : v
+					for k, v in pretrained_dict.items()
+					if 'module.fine_model.' + k in RSTN_dict and 'score' not in k}
 			# 2. overwrite entries in the existing state dict
-			RSTN_dict.update(pretrained_dict_coarse) 
+			RSTN_dict.update(pretrained_dict_coarse)
 			RSTN_dict.update(pretrained_dict_fine)
 			# 3. load the new state dict
 			RSTN_model.load_state_dict(RSTN_dict)
 			print(plane + mode, 'load pre-trained FCN8s model successfully!')
-		
+
 		elif mode == 'I':
 			RSTN_model.load_state_dict(torch.load(RSTN_snapshot['S']))
 			print(plane + mode, 'load S model successfully!')
@@ -88,13 +88,13 @@ if __name__ == '__main__':
 
 		optimizer = torch.optim.SGD(
 			[
-				{'params': get_parameters(RSTN_model, coarse=True, bias=False, parallel=False)},
-				{'params': get_parameters(RSTN_model, coarse=True, bias=True, parallel=False),
+				{'params': get_parameters(RSTN_model, coarse=True, bias=False, parallel=True)},
+				{'params': get_parameters(RSTN_model, coarse=True, bias=True, parallel=True),
 				'lr': learning_rate1 * 2, 'weight_decay': 0},
-				{'params': get_parameters(RSTN_model, coarse=False, bias=False, parallel=False),
+				{'params': get_parameters(RSTN_model, coarse=False, bias=False, parallel=True),
 				'lr': learning_rate1 * 10},
-				{'params': get_parameters(RSTN_model, coarse=False, bias=True, parallel=False),
-				'lr': learning_rate1 * 20, 'weight_decay': 0}	
+				{'params': get_parameters(RSTN_model, coarse=False, bias=True, parallel=True),
+				'lr': learning_rate1 * 20, 'weight_decay': 0}
 			],
 			lr=learning_rate1,
 			momentum=0.99,
@@ -144,4 +144,3 @@ if __name__ == '__main__':
 			# del RSTN_model
 			# torch.cuda.empty_cache()
 			print('#' * 10 , 'end of ' + current_fold + plane + mode + ' training stage!')
-

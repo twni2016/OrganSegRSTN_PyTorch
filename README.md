@@ -2,15 +2,19 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0**
 
-version 0.3.1 - Aug 3 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.4 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.3.1:**
+**NOTE: what's new in version 0.4:**
 
-- Now **GPU memory will not be increased sigificantly** when mode changes, because we explicitly delete the previous model and release GPU memory cache.
-  - In NIH dataset, mode `J` occupies < 7GB GPU memory approximately, less than 10GB in previous version.
+- the problem that GPU memory increases when mode changes is still *not solved*.
+- we introduce **`epoch` hyperparameter** to replace `max_iterations` because the size of datasets vary.
+    - Epoch dict (2, 6, 8) for (S, I, J) is intended for NIH dataset. You may modify it according to your dataset.
+- **Add `training_parallel.py` to support multi-GPU training:**
+    - please see 4.3.4 section for details.
+- Simplify the bilinear weight initialization in ConvTranspose layer (issue #1)
 
 
-Original version of OrganSegRSTN is written in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
+Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
 #### If you use our codes, please cite our paper accordingly:
 
@@ -47,7 +51,7 @@ Improvements:
 
 TODO list:
 
-- The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.3%) than original one in CAFFE (84.4% - 84.6%). 
+- The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.25% - 84.45%) than original one in CAFFE (84.4% - 84.6%). 
   - We are trying different models and weight initialization for higher performance.
 - `coarse_fusion.py` , `oracle_fusion.py`, `oracle_testing.py` will be released soon.
 - The pretrained model for our RSTN in PyTorch and `logs/` will be released soon.
@@ -94,8 +98,9 @@ It is highly recommended to use one or more modern GPUs for computation.
 | `model.py`                   | the models of RSTN                                     |
 | `init.py`                   | the initialization functions                        |
 | `training.py`         | training the coarse and fine stages jointly         |
-| `run.sh`                    | the main program to be called in bash shell         |
-| `utils.py`                  | the common functions                                |
+| `training_parallel.py` | training the coarse and fine stages jointly with multi-GPU |
+| `run.sh`          | the main program to be called in bash shell |
+| `utils.py` | the common functions |
 |                             |                                                     |
 | **SWIG_fast_functions/**               | C codes for acceleration in testing process   |
 
@@ -185,7 +190,7 @@ You can run all the following modules with **one** execution!
 
 #### 4.3 Training (requires: 4.2)
 
-###### 4.3.1 Check `run.sh` and set `$TRAINING_PLANE` and `$TRAINING_GPU` and `$CURRENT_FOLD`.
+###### 4.3.1 Check `run.sh` and set `$TRAINING_PLANE` , `$TRAINING_GPU` ,  `$CURRENT_FOLD`.
 
     You need to run X|Y|Z planes individually, so you can use 3 GPUs in parallel.
     You can also set TRAINING_PLANE=A, so that three planes are trained orderly in one GPU.
@@ -239,6 +244,17 @@ such as those pre-trained model attached in the last part of this file.
 We also provide [a mixed model](http://nothing) (to be provided soon),
 which was tuned using all X|Y|Z images of 82 training samples for pancreas segmentation on NIH.
 Of course, do not use it to evaluate any NIH data, as all cases have been used for training.
+
+###### 4.3.4 Multi-GPU training
+
+> Thank @WatWang (Angtian Wang) for finding bugs on multi-GPU training.
+
+**For your convenience, we provide `training_parallel.py` to support multi-GPU training.** Thus, you just run it instead of `training.py` in the training stage. But you should *pay attention that:*
+
+- `batch_size` should be no less than the number of GPUs (set by `os.environ["CUDA_VISIBLE_DEVICES"]`)
+- `parallel` in `get_parameters`  must be set `True`.
+- predix `module.` should be added to the keys of `pretrained_dict` 
+- last incomplete batch is dropped in `trainloader`
 
 #### 4.4 Coarse-scaled testing (requires: 4.3)
 
@@ -298,7 +314,11 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.3.
+The current version is v0.4
+
+**v0.3:**
+
+no big improvements.
 
 **v0.2:**
 

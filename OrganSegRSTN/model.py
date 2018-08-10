@@ -83,9 +83,7 @@ class FCN8s(nn.Module):
 				if h != w:
 					raise RuntimeError('filters need to be square')
 				filt = torch.from_numpy(self.upsample_filt(h)).float()
-				for i in range((m - 1) // k + 1):
-					r = min(k * (i + 1), m) - k * i
-					mod.weight.data[range(k * i, k * i + r), range(r), :, :] = filt
+				mod.weight.data[range(m), range(k), :, :] = filt
 
 	def upsample_filt(self, size):
 		factor = (size + 1) // 2
@@ -208,7 +206,7 @@ class RSTN(nn.Module):
 				cropped_image, crop_info = self.crop(coarse_prob, image * saliency, label)
 			else:
 				raise ValueError("wrong value of mode, should be in ['S', 'I', 'J']")
-
+			
 			# Fine-scaled Network
 			h = cropped_image
 			h = self.fine_model(h)
@@ -312,8 +310,13 @@ class RSTN(nn.Module):
 		uncropped_image[:, :, bbox[0].item(): bbox[1].item(), bbox[2].item(): bbox[3].item()] = cropped_image
 		return uncropped_image
 
-def get_parameters(model, coarse=True, bias=False):
+def get_parameters(model, coarse=True, bias=False, parallel=False):
 	print('coarse, bias', coarse, bias)
+	if parallel:
+		for name, mod in model.named_children():
+			print('parallel', name)
+			model = mod
+			break
 	for name, mod in model.named_children():
 		if name == 'coarse_model' and coarse \
 			or name in ['saliency1', 'saliency2', 'fine_model'] and not coarse:
