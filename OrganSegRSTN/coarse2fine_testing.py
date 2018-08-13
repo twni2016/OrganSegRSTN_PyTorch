@@ -29,21 +29,15 @@ coarse_result_path = os.path.join(result_path, 'coarse_testing_' + \
 coarse2fine_result_path = os.path.join(result_path, 'coarse2fine_testing_' + \
 	sys.argv[10] + 'x' + str(learning_rate_m1) + ',' + str(crop_margin))
 
-coarse_starting_iterations = int(sys.argv[15])
-coarse_step = int(sys.argv[16])
-coarse_max_iterations = int(sys.argv[17])
-coarse_iteration = range(coarse_starting_iterations, coarse_max_iterations + 1, coarse_step)
-coarse_threshold = float(sys.argv[18])
-fine_starting_iterations = int(sys.argv[19])
-fine_step = int(sys.argv[20])
-fine_max_iterations = int(sys.argv[21])
-fine_iteration = range(fine_starting_iterations, fine_max_iterations + 1, fine_step)
-fine_threshold = float(sys.argv[22])
-max_rounds = int(sys.argv[23])
+epoch = 'e' + sys.argv[15] + sys.argv[16] + sys.argv[17] + sys.argv[18]
+epoch_list = [epoch]
+coarse_threshold = float(sys.argv[19])
+fine_threshold = float(sys.argv[20])
+max_rounds = int(sys.argv[21])
 timestamp = {}
-timestamp['X'] = sys.argv[24]
-timestamp['Y'] = sys.argv[25]
-timestamp['Z'] = sys.argv[26]
+timestamp['X'] = sys.argv[22]
+timestamp['Y'] = sys.argv[23]
+timestamp['Z'] = sys.argv[24]
 
 volume_list = open(testing_set_filename(current_fold), 'r').read().splitlines()
 while volume_list[len(volume_list) - 1] == '':
@@ -54,7 +48,7 @@ fine_snapshot_ = {}
 fine_snapshot_name_ = {}
 for plane in ['X', 'Y', 'Z']:
 	fine_snapshot_name = snapshot_name_from_timestamp(fine_snapshot_path, \
-		current_fold, plane, 'J', slice_thickness, organ_ID, coarse_iteration, timestamp[plane])
+		current_fold, plane, 'J', slice_thickness, organ_ID, timestamp[plane])
 	if fine_snapshot_name == '':
 		exit('  Error: no valid snapshot directories are detected!')
 	fine_snapshot_directory = os.path.join(fine_snapshot_path, fine_snapshot_name)
@@ -72,7 +66,7 @@ coarse_result_name_ = {}
 coarse_result_directory_ = {}
 for plane in ['X', 'Y', 'Z']:
 	coarse_result_name__ = result_name_from_timestamp(coarse_result_path, current_fold, \
-		plane, 'J', slice_thickness, organ_ID, coarse_iteration, volume_list, timestamp[plane])
+		plane, 'J', slice_thickness, organ_ID, volume_list, timestamp[plane])
 	if coarse_result_name__ == '':
 		exit('  Error: no valid result directories are detected!')
 	coarse_result_directory__ = os.path.join(coarse_result_path, coarse_result_name__, 'volumes')
@@ -87,10 +81,8 @@ coarse2fine_result_name = 'FD' + str(current_fold) + ':' + \
 	fine_snapshot_name_['X'] + ',' + \
 	fine_snapshot_name_['Y'] + ',' + \
 	fine_snapshot_name_['Z'] + ':' + \
-	str(coarse_starting_iterations) + '_' + str(coarse_step) + '_' + \
-	str(coarse_max_iterations) + ',' + str(coarse_threshold) + ':' + \
-	str(fine_starting_iterations) + '_' + str(fine_step) + '_' + \
-	str(fine_max_iterations) + ',' + str(fine_threshold) + ',' + str(max_rounds)
+	epoch + '_' + str(coarse_threshold) + '_' + \
+	str(fine_threshold) + ',' + str(max_rounds)
 coarse2fine_result_directory = os.path.join( \
 	coarse2fine_result_path, coarse2fine_result_name, 'volumes')
 
@@ -109,7 +101,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]= str(GPU_ID)
 net_ = {}
 for plane in ['X', 'Y', 'Z']:
 	net_[plane] = []
-	for t in range(len(fine_iteration)):
+	for t in range(len(epoch_list)):
 		net = RSTN(crop_margin=crop_margin, TEST='F').cuda()
 		net.load_state_dict(torch.load(fine_snapshot_[plane][t]))
 		net.eval()
@@ -129,8 +121,7 @@ coarse2fine_result_file = os.path.join(coarse2fine_result_path, \
 output = open(coarse2fine_result_file, 'w')
 output.close()
 output = open(coarse2fine_result_file, 'a+')
-output.write('Fusing results of ' + str(len(coarse_iteration)) + \
-	' and ' + str(len(fine_iteration)) + ' snapshots:\n')
+output.write('Fusing results of ' + str(len(epoch_list)) + ' snapshots:\n')
 output.close()
 
 for i in range(len(volume_list)):
@@ -164,12 +155,12 @@ for i in range(len(volume_list)):
 			if r == 0:  # coarse majority voting
 				pred_ = np.zeros(label.shape, dtype = np.float32)
 				for plane in ['X', 'Y', 'Z']:
-					for t in range(len(coarse_iteration)):
+					for t in range(len(epoch_list)):
 						volume_file_ = volume_filename_testing( \
-							coarse_result_directory_[plane], coarse_iteration[t], i)
+							coarse_result_directory_[plane], epoch_list[t], i)
 						volume_data = np.load(volume_file_)
 						pred_ += volume_data['volume']
-				pred_ /= (255 * len(coarse_iteration) * 3)
+				pred_ /= (255 * len(epoch_list) * 3)
 				print('    Fusion is finished: ' + \
 					str(time.time() - start_time) + ' second(s) elapsed.')
 			else:
@@ -186,7 +177,7 @@ for i in range(len(volume_list)):
 				maskZ = mask.transpose(2, 0, 1).copy()
 				pred_ = np.zeros(label.shape, dtype = np.float32)
 				for plane in ['X', 'Y', 'Z']:
-					for t in range(len(fine_iteration)):
+					for t in range(len(epoch_list)):
 						net = net_[plane][t]
 						minR = 0
 						if plane == 'X':
@@ -256,7 +247,7 @@ for i in range(len(volume_list)):
 							pred_ += pred__.transpose(1, 0, 2)
 						elif plane == 'Z':
 							pred_ += pred__.transpose(1, 2, 0)
-				pred_ /= (len(fine_iteration) * 3)
+				pred_ /= (len(epoch_list) * 3)
 				print('    Testing is finished: ' + \
 					str(time.time() - start_time) + ' second(s) elapsed.')
 

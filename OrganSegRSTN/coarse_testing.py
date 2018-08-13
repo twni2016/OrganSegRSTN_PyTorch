@@ -26,16 +26,12 @@ snapshot_path = os.path.join(snapshot_path, 'SIJ_training_' + \
 	sys.argv[11] + 'x' + str(learning_rate_m1) + ',' + str(crop_margin))
 result_path = os.path.join(result_path, 'coarse_testing_' + \
 	sys.argv[11] + 'x' + str(learning_rate_m1) + ',' + str(crop_margin))
-max_iterations1 = int(sys.argv[18])
-max_iterations2 = int(sys.argv[19])
-starting_iterations = int(sys.argv[20])
-step = int(sys.argv[21])
-max_iterations = int(sys.argv[22])
-iteration = range(starting_iterations, max_iterations + 1, step)
-timestamp = sys.argv[23]
+epoch = 'e' + sys.argv[18] + sys.argv[19] + sys.argv[20] + sys.argv[21]
+epoch_list = [epoch]
+timestamp = sys.argv[22]
 
 snapshot_name = snapshot_name_from_timestamp(snapshot_path, \
-	current_fold, plane, 'J', slice_thickness, organ_ID, iteration, timestamp)
+	current_fold, plane, 'J', slice_thickness, organ_ID, timestamp)
 if snapshot_name == '':
 	exit('Error: no valid snapshot directories are detected!')
 snapshot_directory = os.path.join(snapshot_path, snapshot_name)
@@ -61,11 +57,11 @@ output.close()
 
 for t in range(len(snapshot)):
 	output = open(result_file, 'a+')
-	output.write('Evaluating snapshot ' + str(iteration[t]) + ':\n')
+	output.write('Evaluating snapshot ' + str(epoch_list[t]) + ':\n')
 	output.close()
 	finished = True
 	for i in range(len(volume_list)):
-		volume_file = volume_filename_testing(result_directory, iteration[t], i)
+		volume_file = volume_filename_testing(result_directory, epoch_list[t], i)
 		if not os.path.isfile(volume_file):
 			finished = False
 			break
@@ -79,7 +75,7 @@ for t in range(len(snapshot)):
 		start_time = time.time()
 		print('Testing ' + str(i + 1) + ' out of ' + str(len(volume_list)) + ' testcases, ' + \
 			str(t + 1) + ' out of ' + str(len(snapshot)) + ' snapshots.')
-		volume_file = volume_filename_testing(result_directory, iteration[t], i)
+		volume_file = volume_filename_testing(result_directory, epoch_list[t], i)
 		s = volume_list[i].split(' ')
 		label = np.load(s[2])
 		label = is_organ(label, organ_ID).astype(np.uint8)
@@ -184,12 +180,12 @@ for t in range(len(snapshot)):
 		print('  DSC computation is finished: ' + \
 			str(time.time() - start_time) + ' second(s) elapsed.')
 
-	print('Snapshot ' + str(iteration[t]) + ': average DSC = ' + str(np.mean(DSC[t, :])) + ' .')
+	print('Snapshot ' + str(epoch_list[t]) + ': average DSC = ' + str(np.mean(DSC[t, :])) + ' .')
 	output = open(result_file, 'a+')
-	output.write('Snapshot ' + str(iteration[t]) + \
+	output.write('Snapshot ' + str(epoch_list[t]) + \
 		': average DSC = ' + str(np.mean(DSC[t, :])) + ' .\n')
 	output.close()
 
 print('The testing process is finished.')
 for t in range(len(snapshot)):
-	print('  Snapshot ' + str(iteration[t]) + ': average DSC = ' + str(np.mean(DSC[t, :])) + ' .')
+	print('  Snapshot ' + str(epoch_list[t]) + ': average DSC = ' + str(np.mean(DSC[t, :])) + ' .')

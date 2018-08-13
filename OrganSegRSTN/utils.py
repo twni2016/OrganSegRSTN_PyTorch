@@ -51,7 +51,7 @@ def log_filename(snapshot_directory):
 ####################################################################################################
 # returning the snapshot name
 def snapshot_name_from_timestamp(snapshot_path, \
-	current_fold, plane, stage_code, slice_thickness, organ_ID, iteration, timestamp):
+	current_fold, plane, stage_code, slice_thickness, organ_ID, timestamp):
 	snapshot_prefix = 'FD' + str(current_fold) + ':' + plane + \
 		stage_code + str(slice_thickness) + '_' + str(organ_ID)
 	if len(timestamp) == 15:
@@ -65,7 +65,7 @@ def snapshot_name_from_timestamp(snapshot_path, \
 ####################################################################################################
 # returning the result name
 def result_name_from_timestamp(result_path, current_fold, \
-	plane, stage_code, slice_thickness, organ_ID, iteration, volume_list, timestamp):
+	plane, stage_code, slice_thickness, organ_ID, volume_list, timestamp):
 	result_prefix = 'FD' + str(current_fold) + ':' + plane + \
 		stage_code + str(slice_thickness) + '_' + str(organ_ID)
 	if len(timestamp) == 15:

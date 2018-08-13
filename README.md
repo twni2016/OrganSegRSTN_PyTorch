@@ -1,17 +1,18 @@
 # OrganSegRSTN_PyTorch: an end-to-end coarse-to-fine organ segmentation framework in PyTorch
 
-**This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0**
+**This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.4 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.4.1 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.4:**
+**NOTE: what's new in version 0.4.1:**
 
 - the problem that GPU memory increases when mode changes is still *not solved*.
 - we introduce **`epoch` hyperparameter** to replace `max_iterations` because the size of datasets vary.
     - Epoch dict (2, 6, 8) for (S, I, J) is intended for NIH dataset. You may modify it according to your dataset.
 - **Add `training_parallel.py` to support multi-GPU training:**
     - please see 4.3.4 section for details.
-- Simplify the bilinear weight initialization in ConvTranspose layer (issue #1)
+- Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
+- Add `coarse_fusion.py`
 
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
@@ -53,7 +54,7 @@ TODO list:
 
 - The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.25% - 84.45%) than original one in CAFFE (84.4% - 84.6%). 
   - We are trying different models and weight initialization for higher performance.
-- `coarse_fusion.py` , `oracle_fusion.py`, `oracle_testing.py` will be released soon.
+- `oracle_fusion.py`, `oracle_testing.py` will be released soon.
 - The pretrained model for our RSTN in PyTorch and `logs/` will be released soon.
 
 Any other suggestions please feel free to contact us.
@@ -93,6 +94,7 @@ It is highly recommended to use one or more modern GPUs for computation.
 |                             |                                                     |
 | **OrganSegRSTN/**           | primary codes of OrganSegRSTN                       |
 | `coarse2fine_testing.py`    | the coarse-to-fine testing process                  |
+| `coarse_fusion.py`          | the coarse-scaled fusion process                     |
 | `coarse_testing.py`         | the coarse-scaled testing process                   |
 | `Data.py`                   | the data layer                                      |
 | `model.py`                   | the models of RSTN                                     |
@@ -247,9 +249,11 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
 
 ###### 4.3.4 Multi-GPU training
 
-> Thank @WatWang (Angtian Wang) for finding bugs on multi-GPU training.
+> Thank Angtian Wang for finding bugs on multi-GPU training.
 
 **For your convenience, we provide `training_parallel.py` to support multi-GPU training.** Thus, you just run it instead of `training.py` in the training stage. But you should *pay attention that:*
+
+- image size must be uniform (but normally, the shape of each medical image case is not identical.)
 
 - `batch_size` should be no less than the number of GPUs (set by `os.environ["CUDA_VISIBLE_DEVICES"]`)
 - `parallel` in `get_parameters`  must be set `True`.
@@ -269,21 +273,32 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
         Under $DATA_PATH/results/, a folder named by training information.
     Testing each volume costs ~30 seconds on a Titan-X Pascal GPU, or ~25s on a Titan-Xp GPU.
 
-#### 4.5 Coarse-to-fine testing (requires: 4.4)
+#### 4.5 Coarse-scaled fusion (optional) (requires: 4.4)
 
-###### 4.5.1 Check run.sh and set `$COARSE2FINE_TESTING_GPU`.
+###### 4.5.1 Fusion is performed on CPU and all X|Y|Z planes are combined and executed once.
+
+###### 4.5.2 Set `$ENABLE_COARSE_FUSION=1` and run this script.
+
+    The following folder will be created:
+        Under $DATA_PATH/results/coarse_testing_*, a folder named by fusion information.
+    The main cost in fusion includes I/O and post-processing (removing non-maximum components).
+    We have implemented post-processing in C for acceleration (see 4.6.3).
+
+#### 4.6 Coarse-to-fine testing (requires: 4.4)
+
+###### 4.6.1 Check run.sh and set `$COARSE2FINE_TESTING_GPU`.
 
     Fusion is performed on CPU and all X|Y|Z planes are combined.
     Currently X|Y|Z testing processes are executed with one GPU, but it is not time-comsuming.
 
-###### 4.5.2 Set `$ENABLE_COARSE2FINE_TESTING=1` and run this script.
+###### 4.6.2 Set `$ENABLE_COARSE2FINE_TESTING=1` and run this script.
 
     The following folder will be created:
         Under $DATA_PATH/results/, a folder named by coarse-to-fine information (very long).
     This function calls both fine-scaled testing and fusion codes, so both GPU and CPU are used.
         In our future release, we will implement post-processing in C for acceleration.
 
-###### 4.5.3 how to compile `fast_functions` for other python version?
+###### 4.6.3 how to compile `fast_functions` for other python version?
 
 We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_testing.py`, which can be only run in python 3.6 environment. But we also support other python version 3+, here is the **instructions**:
 
@@ -314,7 +329,7 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.4
+The current version is v0.4.1
 
 **v0.3:**
 
@@ -323,7 +338,7 @@ no big improvements.
 **v0.2:**
 
 -  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
-   -  give instructions in section 4.5.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
+   -  give instructions in section 4.6.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
 -  `training.py` : now trains by *iterations* instead of *epoches*, and learning rate will decay in `J` mode every 10k iterations.
    -  performance of current version is **84.3%** in NIH dataset, which is *slightly lower* than **84.4-84.6%** in CAFFE implementation.
 
