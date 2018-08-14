@@ -12,7 +12,7 @@ version 0.4.1 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 - **Add `training_parallel.py` to support multi-GPU training:**
     - please see 4.3.4 section for details.
 - Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
-- Add `coarse_fusion.py`
+- **Add `coarse_fusion.py`**
 
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
@@ -273,7 +273,7 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
         Under $DATA_PATH/results/, a folder named by training information.
     Testing each volume costs ~30 seconds on a Titan-X Pascal GPU, or ~25s on a Titan-Xp GPU.
 
-#### 4.5 Coarse-scaled fusion (optional) (requires: 4.4)
+#### 4.5 Coarse-scaled fusion (optional, but recommended) (requires: 4.4)
 
 ###### 4.5.1 Fusion is performed on CPU and all X|Y|Z planes are combined and executed once.
 
