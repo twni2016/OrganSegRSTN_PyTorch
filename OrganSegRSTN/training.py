@@ -107,28 +107,34 @@ if __name__ == '__main__':
 		try:
 			for e in range(epoch[mode]):
 				total_loss = 0.0
+				total_coarse_loss = 0.0
+				total_fine_loss = 0.0
 				start = time.time()
 				for index, (image, label) in enumerate(trainloader):
 					start_it = time.time()
 					optimizer.zero_grad()
 					image, label = image.cuda().float(), label.cuda().float()
 					coarse_prob, fine_prob = RSTN_model(image, label, mode=mode)
-					loss = COARSE_WEIGHT * criterion(coarse_prob, label) \
-							+ (1 - COARSE_WEIGHT) * criterion(fine_prob, label)
+					coarse_loss = criterion(coarse_prob, label)
+					fine_loss = criterion(fine_prob, label)
+					loss = COARSE_WEIGHT * coarse_loss \
+							+ (1 - COARSE_WEIGHT) * fine_loss
 					total_loss += loss.item()
+					total_coarse_loss += coarse_loss.item()
+					total_fine_loss += fine_loss.item()
 					loss.backward()
 					optimizer.step()
-					print(current_fold + plane + mode, "Epoch[%d/%d], Iter[%05d], Train DSC %.4f Time Elapsed %.2fs" \
-							%(e+1, epoch[mode], index, 1 - loss.item(), time.time()-start_it))
-					del image, label, coarse_prob, fine_prob, loss
+					print(current_fold + plane + mode, "Epoch[%d/%d], Iter[%05d], Coarse/Fine/Avg Loss %.4f/%.4f/%.4f, Time Elapsed %.2fs" \
+							%(e+1, epoch[mode], index, coarse_loss.item(), fine_loss.item(), loss.item(), time.time()-start_it))
+					del image, label, coarse_prob, fine_prob, loss, coarse_loss, fine_loss
 				
 				if mode == 'J' and (e+1) % epoch['lr_decay'] == 0:
 					print('lr decay')
 					for param_group in optimizer.param_groups:
 						param_group['lr'] *= 0.5
 
-				print(current_fold + plane + mode, "Epoch[%d], Train Avg DSC: %.4f, Time elapsed %.2fs" \
-						%(e+1, 1 - total_loss / len(trainloader), time.time()-start))
+				print(current_fold + plane + mode, "Epoch[%d], Total Coarse/Fine/Avg Loss %.4f/%.4f/%.4f, Time elapsed %.2fs" \
+						%(e+1, total_coarse_loss / len(trainloader), total_fine_loss / len(trainloader), total_loss / len(trainloader), time.time()-start))
 
 		except KeyboardInterrupt:
 			print('!' * 10 , 'save before quitting ...')

@@ -2,9 +2,9 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.4.1 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.4.3 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.4.1:**
+**NOTE: what's new in version 0.4:**
 
 - the problem that GPU memory increases when mode changes is still *not solved*.
 - we introduce **`epoch` hyperparameter** to replace `max_iterations` because the size of datasets vary.
@@ -13,6 +13,7 @@ version 0.4.1 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
     - please see 4.3.4 section for details.
 - Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
 - **Add `coarse_fusion.py`**
+- `training.py` : print **coarse/fine/average** loss, giving more loss information
 
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
@@ -329,7 +330,7 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.4.1
+The current version is v0.4.3
 
 **v0.3:**
 
