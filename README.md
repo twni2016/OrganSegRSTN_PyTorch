@@ -2,7 +2,7 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.4.3 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.4.4 - Aug 18 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
 **NOTE: what's new in version 0.4:**
 
@@ -13,7 +13,7 @@ version 0.4.3 - Aug 10 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
     - please see 4.3.4 section for details.
 - Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
 - **Add `coarse_fusion.py`**
-- `training.py` : print **coarse/fine/average** loss, giving more loss information
+- `training.py` & `training_parallel.py`: print **coarse/fine/average** loss, giving more information of training loss
 
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
@@ -254,11 +254,10 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
 
 **For your convenience, we provide `training_parallel.py` to support multi-GPU training.** Thus, you just run it instead of `training.py` in the training stage. But you should *pay attention that:*
 
-- image size must be uniform (but normally, the shape of each medical image case is not identical.)
-
+- image size must be uniform (but normally, the shape of each medical image case is not identical; in NIH dataset, only Z plane could be trained in parallel without padding into same size)
 - `batch_size` should be no less than the number of GPUs (set by `os.environ["CUDA_VISIBLE_DEVICES"]`)
-- `parallel` in `get_parameters`  must be set `True`.
-- predix `module.` should be added to the keys of `pretrained_dict` 
+- `parallel` in `get_parameters()`  must be set `True`.
+- prefix `module.` should be added to the keys of `pretrained_dict` 
 - last incomplete batch is dropped in `trainloader`
 
 #### 4.4 Coarse-scaled testing (requires: 4.3)
@@ -274,7 +273,7 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
         Under $DATA_PATH/results/, a folder named by training information.
     Testing each volume costs ~30 seconds on a Titan-X Pascal GPU, or ~25s on a Titan-Xp GPU.
 
-#### 4.5 Coarse-scaled fusion (optional, but recommended) (requires: 4.4)
+#### 4.5 Coarse-scaled fusion (optional) (requires: 4.4)
 
 ###### 4.5.1 Fusion is performed on CPU and all X|Y|Z planes are combined and executed once.
 
@@ -330,7 +329,7 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.4.3
+The current version is v0.4.4
 
 **v0.3:**
 

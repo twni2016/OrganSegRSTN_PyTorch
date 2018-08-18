@@ -49,11 +49,35 @@ if __name__ == '__main__':
 	print(current_fold + plane, len(trainloader))
 	print(epoch)
 
+	RSTN_model = nn.DataParallel(RSTN(crop_margin=crop_margin, \
+				crop_prob=crop_prob, crop_sample_batch=crop_sample_batch), device_ids=[0,1,2,3])
 	RSTN_snapshot = {}
-	for mode in ['S', 'I', 'J']:
-		RSTN_model = nn.DataParallel(RSTN(crop_margin=crop_margin, \
-					crop_prob=crop_prob, crop_sample_batch=crop_sample_batch), device_ids=[0,1,2,3])
 
+	model_parameters = filter(lambda p: p.requires_grad, RSTN_model.parameters())
+	params = sum([np.prod(p.size()) for p in model_parameters])
+	print('model parameters:', params)
+
+	optimizer = torch.optim.SGD(
+		[
+			{'params': get_parameters(RSTN_model, coarse=True, bias=False, parallel=True)},
+			{'params': get_parameters(RSTN_model, coarse=True, bias=True, parallel=True),
+			'lr': learning_rate1 * 2, 'weight_decay': 0},
+			{'params': get_parameters(RSTN_model, coarse=False, bias=False, parallel=True),
+			'lr': learning_rate1 * 10},
+			{'params': get_parameters(RSTN_model, coarse=False, bias=True, parallel=True),
+			'lr': learning_rate1 * 20, 'weight_decay': 0}
+		],
+		lr=learning_rate1,
+		momentum=0.99,
+		weight_decay=0.0005)
+
+	criterion = DSC_loss()
+	COARSE_WEIGHT = 1 / 3
+
+	RSTN_model = RSTN_model.cuda()
+	RSTN_model.train()
+
+	for mode in ['S', 'I', 'J']:
 		if mode == 'S':
 			RSTN_dict = RSTN_model.state_dict()
 			pretrained_model = FCN8s(n_class=21)
@@ -74,64 +98,43 @@ if __name__ == '__main__':
 			print(plane + mode, 'load pre-trained FCN8s model successfully!')
 
 		elif mode == 'I':
-			RSTN_model.load_state_dict(torch.load(RSTN_snapshot['S']))
 			print(plane + mode, 'load S model successfully!')
 		elif mode == 'J':
-			RSTN_model.load_state_dict(torch.load(RSTN_snapshot['I']))
 			print(plane + mode, 'load I model successfully!')
 		else:
 			raise ValueError("wrong value of mode, should be in ['S', 'I', 'J']")
 
-		model_parameters = filter(lambda p: p.requires_grad, RSTN_model.parameters())
-		params = sum([np.prod(p.size()) for p in model_parameters])
-		print('model parameters:', params)
-
-		optimizer = torch.optim.SGD(
-			[
-				{'params': get_parameters(RSTN_model, coarse=True, bias=False, parallel=True)},
-				{'params': get_parameters(RSTN_model, coarse=True, bias=True, parallel=True),
-				'lr': learning_rate1 * 2, 'weight_decay': 0},
-				{'params': get_parameters(RSTN_model, coarse=False, bias=False, parallel=True),
-				'lr': learning_rate1 * 10},
-				{'params': get_parameters(RSTN_model, coarse=False, bias=True, parallel=True),
-				'lr': learning_rate1 * 20, 'weight_decay': 0}
-			],
-			lr=learning_rate1,
-			momentum=0.99,
-			weight_decay=0.0005)
-
-		criterion = DSC_loss()
-		COARSE_WEIGHT = 1 / 3
-
-		RSTN_model = RSTN_model.cuda()
-		RSTN_model.train()
-
 		try:
 			for e in range(epoch[mode]):
 				total_loss = 0.0
+				total_coarse_loss = 0.0
+				total_fine_loss = 0.0
 				start = time.time()
 				for index, (image, label) in enumerate(trainloader):
 					start_it = time.time()
 					optimizer.zero_grad()
 					image, label = image.cuda().float(), label.cuda().float()
 					coarse_prob, fine_prob = RSTN_model(image, label, mode=mode)
-					loss = COARSE_WEIGHT * criterion(coarse_prob, label) \
-							+ (1 - COARSE_WEIGHT) * criterion(fine_prob, label)
+					coarse_loss = criterion(coarse_prob, label)
+					fine_loss = criterion(fine_prob, label)
+					loss = COARSE_WEIGHT * coarse_loss \
+							+ (1 - COARSE_WEIGHT) * fine_loss
 					total_loss += loss.item()
+					total_coarse_loss += coarse_loss.item()
+					total_fine_loss += fine_loss.item()
 					loss.backward()
 					optimizer.step()
-
-					print(current_fold + plane + mode, "Epoch[%d/%d], Iter[%05d], Train DSC %.4f Time Elapsed %.2fs" \
-							%(e+1, epoch[mode], index, 1 - loss.item(), time.time()-start_it))
-					del image, label, coarse_prob, fine_prob, loss
+					print(current_fold + plane + mode, "Epoch[%d/%d], Iter[%05d], Coarse/Fine/Avg Loss %.4f/%.4f/%.4f, Time Elapsed %.2fs" \
+							%(e+1, epoch[mode], index, coarse_loss.item(), fine_loss.item(), loss.item(), time.time()-start_it))
+					del image, label, coarse_prob, fine_prob, loss, coarse_loss, fine_loss
 				
 				if mode == 'J' and (e+1) % epoch['lr_decay'] == 0:
 					print('lr decay')
 					for param_group in optimizer.param_groups:
 						param_group['lr'] *= 0.5
 
-				print(current_fold + plane + mode, "Epoch[%d], Train Avg DSC: %.4f, Time elapsed %.2fs" \
-						%(e+1, 1 - total_loss / len(trainloader), time.time()-start))
+				print(current_fold + plane + mode, "Epoch[%d], Total Coarse/Fine/Avg Loss %.4f/%.4f/%.4f, Time elapsed %.2fs" \
+						%(e+1, total_coarse_loss / len(trainloader), total_fine_loss / len(trainloader), total_loss / len(trainloader), time.time()-start))
 
 		except KeyboardInterrupt:
 			print('!' * 10 , 'save before quitting ...')
@@ -140,7 +143,5 @@ if __name__ == '__main__':
 				plane + mode + str(slice_thickness) + '_' + str(organ_ID) + '_' + timestamp
 			RSTN_snapshot[mode] = os.path.join(snapshot_path, snapshot_name) + '.pkl'
 			torch.save(RSTN_model.state_dict(), RSTN_snapshot[mode])
-			# delete the model to release GPU memory
-			# del RSTN_model
-			# torch.cuda.empty_cache()
 			print('#' * 10 , 'end of ' + current_fold + plane + mode + ' training stage!')
+
