@@ -2,19 +2,11 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.4.4 - Aug 18 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.5 - Aug 22 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.4:**
+**NOTE: what's new in version 0.5:**
 
-- the problem that GPU memory increases when mode changes is still *not solved*.
-- we introduce **`epoch` hyperparameter** to replace `max_iterations` because the size of datasets vary.
-    - Epoch dict (2, 6, 8) for (S, I, J) is intended for NIH dataset. You may modify it according to your dataset.
-- **Add `training_parallel.py` to support multi-GPU training:**
-    - please see 4.3.4 section for details.
-- Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
-- **Add `coarse_fusion.py`**
-- `training.py` & `training_parallel.py`: print **coarse/fine/average** loss, giving more information of training loss
-
+- update `README.md`
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -235,10 +227,10 @@ We train RSTN model in **three sequential modes `S,I,J`**  in order to make mode
 
 ###### How to determine if a model converges and works well?
 
-The DSC value in the beginning of training is almost 0.0.
+The coarse loss in the beginning of training is almost 1.0.
 If a model converges, you should observe the loss function values to decrease gradually.
-**But in order to make it work well, in the last several epochs,
-you need to confirm the average DSC value to be sufficiently high (e.g. 0.8 - 0.85).**
+**In order to make it work well, in the end of each training stage,
+you need to confirm the average loss to be sufficiently low (e.g. 0.3 in `S`, 0.2 in `I`, 0.15 in `J`).**
 
 ###### Training RSTN on other CT datasets?
 
@@ -250,7 +242,7 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
 
 ###### 4.3.4 Multi-GPU training
 
-> Thank Angtian Wang for finding bugs on multi-GPU training.
+> Thank Angtian Wang and Yingwei Li for finding bugs on multi-GPU training.
 
 **For your convenience, we provide `training_parallel.py` to support multi-GPU training.** Thus, you just run it instead of `training.py` in the training stage. But you should *pay attention that:*
 
@@ -259,6 +251,7 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
 - `parallel` in `get_parameters()`  must be set `True`.
 - prefix `module.` should be added to the keys of `pretrained_dict` 
 - last incomplete batch is dropped in `trainloader`
+- in `coarse_testing.py` and `coarse2fine_testing.py`: you should wrap the model into `nn.DataParallel`
 
 #### 4.4 Coarse-scaled testing (requires: 4.3)
 
@@ -306,12 +299,12 @@ We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_t
 
 - Then go to `SWIG_fast_functions` directory, run
 
-  ````bash
-  swig -python -py3 fast_functions.i
-  python3 setup.py build_ext --inplace
-  mv _fast_functions.cpython-3*m-x86_64-linux-gnu.so _fast_functions.so # * depends on py3.x
-  python test.py # test
-  cp {_fast_functions.so,fast_functions.py} ../OrganSegRSTN/ # no space in {}
+  ````
+  $ swig -python -py3 fast_functions.i
+  $ python3 setup.py build_ext --inplace
+  $ mv _fast_functions.cpython-3*m-x86_64-linux-gnu.so _fast_functions.so # * depends on py3.x
+  $ python test.py # test
+  $ cp {_fast_functions.so,fast_functions.py} ../OrganSegRSTN/ # no space in {}
   ````
 
 - Finally, you can run `coarse2fine_testing.py` successfully.
@@ -329,11 +322,19 @@ Congratulations! You have finished the entire process. Check your results now!
 
 ## 5. Versions
 
-The current version is v0.4.4
+The current version is v0.5
 
-**v0.3:**
+**v0.4:**
 
-no big improvements.
+- we introduce **`epoch` hyperparameter** to replace `max_iterations` because the size of datasets varies.
+    - Epoch dict {2, 6, 8} for (S, I, J) is intended for NIH dataset. You may modify it according to your dataset.
+- **Add `training_parallel.py` to support multi-GPU training:**
+    - please see 4.3.4 section for details.
+- Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
+- **Add `coarse_fusion.py`**
+- `training.py` & `training_parallel.py`: print **coarse/fine/average** loss, giving more information of training loss
+
+**v0.3:** no big improvements.
 
 **v0.2:**
 
