@@ -2,11 +2,11 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.5 - Aug 22 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.5.1 - Aug 23 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.5:**
+**NOTE: what's new in version 0.5.1:**
 
-- update `README.md`
+- add `logs/` which contains training logs and testing results in `FD0`. please see section 5.
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -48,7 +48,7 @@ TODO list:
 - The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.25% - 84.45%) than original one in CAFFE (84.4% - 84.6%). 
   - We are trying different models and weight initialization for higher performance.
 - `oracle_fusion.py`, `oracle_testing.py` will be released soon.
-- The pretrained model for our RSTN in PyTorch and `logs/` will be released soon.
+- The pretrained model for our RSTN in PyTorch will be released soon.
 
 Any other suggestions please feel free to contact us.
 
@@ -98,6 +98,7 @@ It is highly recommended to use one or more modern GPUs for computation.
 | `utils.py` | the common functions |
 |                             |                                                     |
 | **SWIG_fast_functions/**               | C codes for acceleration in testing process   |
+| **logs/**                   | training log files on the NIH dataset                |
 
 
 ## 3. Installation
@@ -299,7 +300,7 @@ We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_t
 
 - Then go to `SWIG_fast_functions` directory, run
 
-  ````
+  ````bash
   $ swig -python -py3 fast_functions.i
   $ python3 setup.py build_ext --inplace
   $ mv _fast_functions.cpython-3*m-x86_64-linux-gnu.so _fast_functions.so # * depends on py3.x
@@ -320,9 +321,21 @@ We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_t
 
 Congratulations! You have finished the entire process. Check your results now!
 
-## 5. Versions
+## 5. Pre-trained Models on the NIH Dataset
 
-The current version is v0.5
+**NOTE**: all these models were trained following our default settings.
+
+The 82 cases in the NIH dataset are split into 4 folds:
+  * **Fold #0**: testing on Cases 01, 02, ..., 20;
+  * **Fold #1**: testing on Cases 21, 22, ..., 40;
+  * **Fold #2**: testing on Cases 41, 42, ..., 61;
+  * **Fold #3**: testing on Cases 62, 63, ..., 82.
+  
+We also attach the log files and testing results for your reference here. Please refer to the `logs/` folder.
+
+## 6. Versions
+
+The current version is v0.5.1
 
 **v0.4:**
 
@@ -345,7 +358,7 @@ The current version is v0.5
 
 **v0.1:** init version.
 
-## 6. Contact Information
+## 7. Contact Information
 
 If you encounter any problems in using these codes, please open an issue in this repository.
 You may also contact Tianwei Ni (twni2016@gmail.com) or Lingxi Xie (198808xc@gmail.com).
