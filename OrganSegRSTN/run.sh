@@ -26,6 +26,8 @@ ENABLE_INITIALIZATION=0
 ENABLE_TRAINING=0
 ENABLE_COARSE_TESTING=0
 ENABLE_COARSE_FUSION=0
+ENABLE_ORACLE_TESTING=0
+ENABLE_ORACLE_FUSION=0
 ENABLE_COARSE2FINE_TESTING=0
 # training settings: X|Y|Z
 TRAINING_ORGAN_ID=$CURRENT_ORGAN_ID
@@ -37,13 +39,19 @@ COARSE_TESTING_PLANE=$CURRENT_PLANE
 COARSE_TESTING_GPU=$CURRENT_GPU
 # coarse_fusion settings: before this, coarse-scaled results on 3 views shall be ready
 COARSE_FUSION_ORGAN_ID=$CURRENT_ORGAN_ID
+# oracle_testing settings: X|Y|Z, before this, fine-scaled models shall be ready
+ORACLE_TESTING_ORGAN_ID=$CURRENT_ORGAN_ID
+ORACLE_TESTING_PLANE=$CURRENT_PLANE
+ORACLE_TESTING_GPU=$CURRENT_GPU
+# oracle_fusion settings: before this, fine-scaled results on 3 views shall be ready
+ORACLE_FUSION_ORGAN_ID=$CURRENT_ORGAN_ID
 # fine_testing settings: before this, both coarse-scaled and fine-scaled models shall be ready
 COARSE2FINE_TESTING_ORGAN_ID=$CURRENT_ORGAN_ID
 COARSE2FINE_TESTING_GPU=$CURRENT_GPU
 
 ####################################################################################################
 # defining the root path which stores image and label data
-DATA_PATH='/media/5T2/Datasets/NIH/'
+DATA_PATH='/mnt/data0/tianwei/NIH/'
 
 ####################################################################################################
 # data initialization: only needs to be run once
@@ -140,8 +148,7 @@ COARSE_TIMESTAMP2=$TRAINING_TIMESTAMP
 # coarse_testing.py : data_path, current_fold, organ_number, low_range, high_range,
 #     slice_threshold, slice_thickness, organ_ID, plane, GPU_ID,
 #     learning_rate1, learning_rate2, margin, prob, sample_batch,
-#     step, max_iterations1, max_iterations2,
-#     starting_iterations, step, max_iterations,
+#     EPOCH_S, EPOCH_I, EPOCH_J, EPOCH_STEP,
 #     timestamp1, timestamp2 (optional)
 if [ "$ENABLE_COARSE_TESTING" = "1" ]
 then
@@ -200,7 +207,7 @@ COARSE_TIMESTAMP2_Z=$TRAINING_TIMESTAMP
 # coarse_fusion.py : data_path, current_fold, organ_number, low_range, high_range,
 #     slice_threshold, slice_thickness, organ_ID, plane, GPU_ID,
 #     learning_rate1, learning_rate_m1, learning_rate2, learning_rate_m2, margin,
-#     starting_iterations, step, max_iterations, threshold,
+#     EPOCH_S, EPOCH_I, EPOCH_J, EPOCH_STEP, threshold,
 #     timestamp1_X, timestamp1_Y, timestamp1_Z,
 #     timestamp2_X (optional), timestamp2_Y (optional), timestamp2_Z (optional)
 if [ "$ENABLE_COARSE_FUSION" = "1" ]
@@ -213,6 +220,93 @@ then
 		$COARSE_FUSION_EPOCH_STEP $COARSE_FUSION_THRESHOLD \
 		$COARSE_TIMESTAMP1_X $COARSE_TIMESTAMP1_Y $COARSE_TIMESTAMP1_Z \
 		$COARSE_TIMESTAMP2_X $COARSE_TIMESTAMP2_Y $COARSE_TIMESTAMP2_Z
+fi
+
+####################################################################################################
+# the oracle testing processes
+# variables
+ORACLE_TESTING_EPOCH_S=$TRAINING_EPOCH_S
+ORACLE_TESTING_EPOCH_I=$TRAINING_EPOCH_I
+ORACLE_TESTING_EPOCH_J=$TRAINING_EPOCH_J
+ORACLE_TESTING_EPOCH_STEP=$LR_DECAY_EPOCH_J_STEP
+ORACLE_TIMESTAMP1=$TRAINING_TIMESTAMP
+ORACLE_TIMESTAMP2=$TRAINING_TIMESTAMP
+# oracle_testing.py : data_path, current_fold, organ_number, low_range, high_range,
+#     slice_threshold, slice_thickness, organ_ID, plane, GPU_ID,
+#     learning_rate1, learning_rate_m1, learning_rate2, learning_rate_m2,
+#     margin, prob, sample_batch,
+#     EPOCH_S, EPOCH_I, EPOCH_J, EPOCH_STEP,
+#     timestamp1, timestamp2 (optional)
+if [ "$ENABLE_ORACLE_TESTING" = "1" ]
+then
+	if [ "$ORACLE_TESTING_PLANE" = "X" ] || [ "$ORACLE_TESTING_PLANE" = "A" ]
+	then
+		python oracle_testing.py \
+			$DATA_PATH $CURRENT_FOLD $ORGAN_NUMBER $LOW_RANGE $HIGH_RANGE \
+			$SLICE_THRESHOLD $SLICE_THICKNESS \
+			$ORACLE_TESTING_ORGAN_ID X $ORACLE_TESTING_GPU \
+			$LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 \
+			$TRAINING_MARGIN $TRAINING_PROB $TRAINING_SAMPLE_BATCH \
+			$ORACLE_TESTING_EPOCH_S $ORACLE_TESTING_EPOCH_I \
+			$ORACLE_TESTING_EPOCH_J $ORACLE_TESTING_EPOCH_STEP \
+			$ORACLE_TIMESTAMP1 $ORACLE_TIMESTAMP2
+	fi
+	if [ "$ORACLE_TESTING_PLANE" = "Y" ] || [ "$ORACLE_TESTING_PLANE" = "A" ]
+	then
+		python oracle_testing.py \
+			$DATA_PATH $CURRENT_FOLD $ORGAN_NUMBER $LOW_RANGE $HIGH_RANGE \
+			$SLICE_THRESHOLD $SLICE_THICKNESS \
+			$ORACLE_TESTING_ORGAN_ID Y $ORACLE_TESTING_GPU \
+			$LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 \
+			$TRAINING_MARGIN $TRAINING_PROB $TRAINING_SAMPLE_BATCH \
+			$ORACLE_TESTING_EPOCH_S $ORACLE_TESTING_EPOCH_I \
+			$ORACLE_TESTING_EPOCH_J $ORACLE_TESTING_EPOCH_STEP \
+			$ORACLE_TIMESTAMP1 $ORACLE_TIMESTAMP2
+	fi
+	if [ "$ORACLE_TESTING_PLANE" = "Z" ] || [ "$ORACLE_TESTING_PLANE" = "A" ]
+	then
+		python oracle_testing.py \
+			$DATA_PATH $CURRENT_FOLD $ORGAN_NUMBER $LOW_RANGE $HIGH_RANGE \
+			$SLICE_THRESHOLD $SLICE_THICKNESS \
+			$ORACLE_TESTING_ORGAN_ID Z $ORACLE_TESTING_GPU \
+			$LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 \
+			$TRAINING_MARGIN $TRAINING_PROB $TRAINING_SAMPLE_BATCH \
+			$ORACLE_TESTING_EPOCH_S $ORACLE_TESTING_EPOCH_I \
+			$ORACLE_TESTING_EPOCH_J $ORACLE_TESTING_EPOCH_STEP \
+			$ORACLE_TIMESTAMP1 $ORACLE_TIMESTAMP2
+	fi
+fi
+
+####################################################################################################
+# the oracle-scaled fusion process
+# variables
+ORACLE_FUSION_EPOCH_S=$TRAINING_EPOCH_S
+ORACLE_FUSION_EPOCH_I=$TRAINING_EPOCH_I
+ORACLE_FUSION_EPOCH_J=$TRAINING_EPOCH_J
+ORACLE_FUSION_EPOCH_STEP=$LR_DECAY_EPOCH_J_STEP
+ORACLE_FUSION_THRESHOLD=0.5
+ORACLE_TIMESTAMP1_X=$TRAINING_TIMESTAMP
+ORACLE_TIMESTAMP1_Y=$TRAINING_TIMESTAMP
+ORACLE_TIMESTAMP1_Z=$TRAINING_TIMESTAMP
+ORACLE_TIMESTAMP2_X=$TRAINING_TIMESTAMP
+ORACLE_TIMESTAMP2_Y=$TRAINING_TIMESTAMP
+ORACLE_TIMESTAMP2_Z=$TRAINING_TIMESTAMP
+# oracle_fusion.py : data_path, current_fold, organ_number, low_range, high_range,
+#     slice_threshold, slice_thickness, organ_ID, plane, GPU_ID,
+#     learning_rate1, learning_rate_m1, learning_rate2, learning_rate_m2, margin,
+#     EPOCH_S, EPOCH_I, EPOCH_J, EPOCH_STEP, threshold,
+#     timestamp1_X, timestamp1_Y, timestamp1_Z,
+#     timestamp2_X (optional), timestamp2_Y (optional), timestamp2_Z (optional)
+if [ "$ENABLE_ORACLE_FUSION" = "1" ]
+then
+	python oracle_fusion.py \
+		$DATA_PATH $CURRENT_FOLD $ORGAN_NUMBER $LOW_RANGE $HIGH_RANGE \
+		$SLICE_THRESHOLD $SLICE_THICKNESS $ORACLE_TESTING_ORGAN_ID $ORACLE_TESTING_GPU \
+		$LEARNING_RATE1 $LEARNING_RATE_M1 $LEARNING_RATE2 $LEARNING_RATE_M2 $TRAINING_MARGIN \
+		$ORACLE_FUSION_EPOCH_S $ORACLE_FUSION_EPOCH_I $ORACLE_FUSION_EPOCH_J \
+		$ORACLE_FUSION_EPOCH_STEP $ORACLE_FUSION_THRESHOLD \
+		$ORACLE_TIMESTAMP1_X $ORACLE_TIMESTAMP1_Y $ORACLE_TIMESTAMP1_Z \
+		$ORACLE_TIMESTAMP2_X $ORACLE_TIMESTAMP2_Y $ORACLE_TIMESTAMP2_Z
 fi
 
 ####################################################################################################
@@ -235,7 +329,7 @@ MAX_ROUNDS=10
 #     learning_rate1, learning_rate_m1, learning_rate2, learning_rate_m2, margin,
 #     coarse_fusion_starting_iterations, coarse_fusion_step, coarse_fusion_max_iterations,
 #     coarse_fusion_threshold, coarse_fusion_code,
-#     fine_starting_iterations, fine_step, fine_max_iterations,
+#     EPOCH_S, EPOCH_I, EPOCH_J, EPOCH_STEP,
 #     fine_fusion_threshold, max_rounds,
 #     timestamp1_X, timestamp1_Y, timestamp1_Z,
 #     timestamp2_X (optional), timestamp2_Y (optional), timestamp2_Z (optional)

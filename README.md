@@ -2,11 +2,13 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.5.1 - Aug 23 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 0.5.2 - Aug 24 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.5.1:**
+**NOTE: what's new in version 0.5.2:**
 
-- add `logs/` which contains training logs and testing results in `FD0`. please see section 5.
+- add **`logs/`** which contains training logs and testing results in `FOLD #0`. please see section 5
+- add **RSTN pre-trained models** in section 5
+- add **`oracle_testing.py` & `oracle_fusion.py`** to evaluate fine models. please see 4.6 & 4.7
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -43,14 +45,9 @@ Improvements:
 - Our code runs almost **twice faster** than original one in CAFFE. 
 - The *minimum* of DSC in test cases is **a little higher** (63.4%) than original minimum (62.8%).
 
-TODO list:
+Performance:
 
 - The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.25% - 84.45%) than original one in CAFFE (84.4% - 84.6%). 
-  - We are trying different models and weight initialization for higher performance.
-- `oracle_fusion.py`, `oracle_testing.py` will be released soon.
-- The pretrained model for our RSTN in PyTorch will be released soon.
-
-Any other suggestions please feel free to contact us.
 
 ## 1. Introduction
 
@@ -92,6 +89,8 @@ It is highly recommended to use one or more modern GPUs for computation.
 | `Data.py`                   | the data layer                                      |
 | `model.py`                   | the models of RSTN                                     |
 | `init.py`                   | the initialization functions                        |
+| `oracle_fusion.py`          | the fusion process with oracle information           |
+| `oracle_testing.py`         | the testing process with oracle information          |
 | `training.py`         | training the coarse and fine stages jointly         |
 | `training_parallel.py` | training the coarse and fine stages jointly with multi-GPU |
 | `run.sh`          | the main program to be called in bash shell |
@@ -276,23 +275,50 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
     The following folder will be created:
         Under $DATA_PATH/results/coarse_testing_*, a folder named by fusion information.
     The main cost in fusion includes I/O and post-processing (removing non-maximum components).
-    We have implemented post-processing in C for acceleration (see 4.6.3).
+    We have implemented post-processing in C for acceleration (see 4.8.3).
 
-#### 4.6 Coarse-to-fine testing (requires: 4.4)
+#### 4.6 Oracle testing (optional) (requires: 4.3)
 
-###### 4.6.1 Check run.sh and set `$COARSE2FINE_TESTING_GPU`.
+**NOTE**: Without this step, you can also run the coarse-to-fine testing process.
+    This stage is still recommended, so that you can check the quality of the fine-scaled models.
+
+###### 4.6.1 Check `run.sh` and set `$ORACLE_TESTING_PLANE` and `$ORACLE_TESTING_GPU`.
+    You need to run X|Y|Z planes individually, so you can use 3 GPUs in parallel.
+    You can also set ORACLE_TESTING_PLANE=A, so that three planes are tested orderly in one GPU.
+
+###### 4.6.2 Set `$ENABLE_ORACLE_TESTING=1` and run this script.
+    The following folder will be created:
+        Under $DATA_PATH/results/, a folder named by training information.
+    Testing each volume costs ~10 seconds on a Titan-X Pascal GPU, or ~8s on a Titan-Xp GPU.
+
+
+#### 4.7 Oracle fusion (optional) (requires: 4.6)
+
+**NOTE**: Without this step, you can also run the coarse-to-fine testing process.
+    This stage is still recommended, so that you can check the quality of the fine-scaled models.
+
+###### 4.7.1 Fusion is perfomed on CPU and all X|Y|Z planes are combined and executed once.
+
+###### 4.7.2 Set `$ENABLE_ORACLE_FUSION=1` and run this script.
+    The following folder will be created:
+        Under $DATA_PATH/results/, a folder named by fusion information.
+    The main cost in fusion includes I/O and post-processing (removing non-maximum components).
+
+#### 4.8 Coarse-to-fine testing (requires: 4.4)
+
+###### 4.8.1 Check run.sh and set `$COARSE2FINE_TESTING_GPU`.
 
     Fusion is performed on CPU and all X|Y|Z planes are combined.
     Currently X|Y|Z testing processes are executed with one GPU, but it is not time-comsuming.
 
-###### 4.6.2 Set `$ENABLE_COARSE2FINE_TESTING=1` and run this script.
+###### 4.8.2 Set `$ENABLE_COARSE2FINE_TESTING=1` and run this script.
 
     The following folder will be created:
         Under $DATA_PATH/results/, a folder named by coarse-to-fine information (very long).
     This function calls both fine-scaled testing and fusion codes, so both GPU and CPU are used.
         In our future release, we will implement post-processing in C for acceleration.
 
-###### 4.6.3 how to compile `fast_functions` for other python version?
+###### 4.8.3 how to compile `fast_functions` for other python version?
 
 We provide `_fast_functions.so` for python3.6 for acceleration in `coarse2fine_testing.py`, which can be only run in python 3.6 environment. But we also support other python version 3+, here is the **instructions**:
 
@@ -330,12 +356,19 @@ The 82 cases in the NIH dataset are split into 4 folds:
   * **Fold #1**: testing on Cases 21, 22, ..., 40;
   * **Fold #2**: testing on Cases 41, 42, ..., 61;
   * **Fold #3**: testing on Cases 62, 63, ..., 82.
-  
+
+We provide the trained models on each plane of `Fold #0`, in total 3 files.
+
+Each of these models is around 1.07GB, approximately the size of two (coarse+fine) FCN models.
+  * **Fold #0**: [[X]](https://drive.google.com/file/d/1mYR_t-mi2gDQX_HBdpoLH8ZKGXi7B1Fn/view?usp=sharing)
+                 [[Y]](https://drive.google.com/file/d/126BZDOUk4__g6YBeUN7s1FUzYhxNYZBL/view?usp=sharing)
+                 [[Z]](https://drive.google.com/file/d/1wLu8jaxmthCiM2qXqpq3-3lQchSNcmdk/view?usp=sharing)
+                 (**Accuracy**: coarse-to-fine 84.62%)
 We also attach the log files and testing results for your reference here. Please refer to the `logs/` folder.
 
 ## 6. Versions
 
-The current version is v0.5.1
+The current version is v0.5.2
 
 **v0.4:**
 
@@ -352,7 +385,7 @@ The current version is v0.5.1
 **v0.2:**
 
 -  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
-   -  give instructions in section 4.6.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
+   -  give instructions in section 4.8.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
 -  `training.py` : now trains by *iterations* instead of *epoches*, and learning rate will decay in `J` mode every 10k iterations.
    -  performance of current version is **84.3%** in NIH dataset, which is *slightly lower* than **84.4-84.6%** in CAFFE implementation.
 

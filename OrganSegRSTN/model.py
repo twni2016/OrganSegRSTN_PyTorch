@@ -215,7 +215,7 @@ class RSTN(nn.Module):
 			fine_prob = h
 			return coarse_prob, fine_prob
 
-		elif self.TEST == 'C':
+		elif self.TEST == 'C': # Coarse testing
 			assert label is None and mode is None and \
 				score is None and mask is None
 			# Coarse-scaled Network
@@ -225,7 +225,27 @@ class RSTN(nn.Module):
 			coarse_prob = h
 			return coarse_prob
 		
-		elif self.TEST == 'F':
+		elif self.TEST == 'O': # Oracle testing
+			assert label is not None and mode is None and \
+				score is None and mask is None
+			# Coarse-scaled Network
+			h = image
+			h = self.coarse_model(h)
+			h = torch.sigmoid(h)
+			# Saliency Transformation Module
+			h = self.relu_saliency1(self.saliency1(h))
+			h = self.saliency2(h)
+			saliency = h
+			cropped_image, crop_info = self.crop(label, image * saliency)
+			# Fine-scaled Network
+			h = cropped_image
+			h = self.fine_model(h)
+			h = self.uncrop(crop_info, h, image)
+			h = torch.sigmoid(h)
+			fine_prob = h
+			return fine_prob
+		
+		elif self.TEST == 'F': # Fine testing
 			assert label is None and mode is None \
 				and score is not None and mask is not None
 			# Saliency Transformation Module
@@ -243,7 +263,7 @@ class RSTN(nn.Module):
 			return fine_prob
 
 		else:
-			raise ValueError("wrong value of TEST, should be in [None, 'C', 'F']")
+			raise ValueError("wrong value of TEST, should be in [None, 'C', 'F', 'O']")
 
 	def crop(self, prob_map, saliency_data, label=None):
 		(N, C, W, H) = prob_map.shape
