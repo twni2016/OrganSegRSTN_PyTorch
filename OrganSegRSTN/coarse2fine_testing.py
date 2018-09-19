@@ -4,7 +4,6 @@ import sys
 import time
 from utils import *
 from model import *
-import scipy.io
 
 
 data_path = sys.argv[1]

@@ -344,9 +344,9 @@ def get_parameters(model, coarse=True, bias=False, parallel=False):
 			for n, m in mod.named_modules():
 				if isinstance(m, nn.Conv2d):
 					print(n, m)
-					if bias:
+					if bias and m.bias is not None:
 						yield m.bias
-					else:
+					elif not bias:
 						yield m.weight
 				elif isinstance(m, nn.ConvTranspose2d):
 					# weight is frozen because it is just a bilinear upsampling

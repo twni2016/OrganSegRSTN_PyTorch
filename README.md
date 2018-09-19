@@ -2,13 +2,10 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 0.5.2 - Aug 24 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 1.0 - Sept 19 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 0.5.2:**
-
-- add **`logs/`** which contains training logs and testing results in `FOLD #0`. please see section 5
-- add **RSTN pre-trained models** in section 5
-- add **`oracle_testing.py` & `oracle_fusion.py`** to evaluate fine models. please see 4.6 & 4.7
+**NOTE: what's new in version 1.0:**
+- make `get_parameters` in `model.py` more robust
 
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -368,7 +365,13 @@ We also attach the log files and testing results for your reference here. Please
 
 ## 6. Versions
 
-The current version is v0.5.2
+The current version is v1.0
+
+**v0.5:**
+
+- add **`logs/`** which contains training logs and testing results in `FOLD #0`. please see section 5
+- add **RSTN pre-trained models** in section 5
+- add **`oracle_testing.py` & `oracle_fusion.py`** to evaluate fine models. please see 4.6 & 4.7
 
 **v0.4:**
 
