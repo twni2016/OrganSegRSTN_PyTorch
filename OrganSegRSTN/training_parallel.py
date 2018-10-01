@@ -80,9 +80,7 @@ if __name__ == '__main__':
 	for mode in ['S', 'I', 'J']:
 		if mode == 'S':
 			RSTN_dict = RSTN_model.state_dict()
-			pretrained_model = FCN8s(n_class=21)
-			pretrained_model.load_state_dict(torch.load(FCN_weights))
-			pretrained_dict = pretrained_model.state_dict()
+			pretrained_dict = torch.load(FCN_weights) # FCN8s(n_class=21)
 			# 1. filter out unnecessary keys
 			pretrained_dict_coarse = {'module.coarse_model.' + k : v
 					for k, v in pretrained_dict.items()
