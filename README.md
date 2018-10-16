@@ -2,11 +2,13 @@
 
 **This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
 
-version 1.0 - Sept 19 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 1.1 - Oct 15 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 1.0:**
-- make `get_parameters` in `model.py` more robust
+**NOTE: what's new in version 1.1:**
 
+- Thank *Qihang Yu* for finding the bug which affects performance when `batch > 1` in `model.py` and fixing it elegantly.
+- remove the redundant `clone()` in `model.py`
+  
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
 #### If you use our codes, please cite our paper accordingly:
@@ -365,8 +367,12 @@ We also attach the log files and testing results for your reference here. Please
 
 ## 6. Versions
 
-The current version is v1.0
+The current version is v1.1
 
+**v1.0:**
+
+- make `get_parameters` in `model.py` more robust
+  
 **v0.5:**
 
 - add **`logs/`** which contains training logs and testing results in `FOLD #0`. please see section 5
