@@ -1,13 +1,12 @@
 # OrganSegRSTN_PyTorch: an end-to-end coarse-to-fine organ segmentation framework in PyTorch
 
-**This is a re-implementation of OrganSegRSTN in PyTorch 0.4.0, Python 3.6**
+**This is a re-implementation of OrganSegRSTN in PyTorch 0.4, Python 3.6**
 
-version 1.1 - Oct 15 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+version 1.2 - Nov 9 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
 
-**NOTE: what's new in version 1.1:**
-
-- Thank *Qihang Yu* for finding the bug which affects performance when `batch > 1` in `model.py` and fixing it elegantly.
-- remove the redundant `clone()` in `model.py`
+**NOTE: what's new in version 1.2:**
+- add standard deviation of DSC in `coarse2fine_testing.py`
+- Our codebase is also compatible with PyTorch 0.4.1.
   
 Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
 
@@ -112,10 +111,7 @@ It is highly recommended to use one or more modern GPUs for computation.
 
 #### 3.2 PyTorch
 
-###### 3.2.1 Download a PyTorch library from https://pytorch.org/previous-versions/ . We are using PyTorch 0.4.0 .
-
-**Please ensure that you install PyTorch 0.4.0 version, because our code is incompatible with the newest version 0.4.1.**
-
+###### 3.2.1 Download a PyTorch library from https://pytorch.org/ . We are using PyTorch 0.4.0 or 0.4.1.
 
 ## 4. Usage
 
@@ -367,8 +363,13 @@ We also attach the log files and testing results for your reference here. Please
 
 ## 6. Versions
 
-The current version is v1.1
+The current version is v1.2
 
+**v1.1:**
+
+- Thank *Qihang Yu* for finding the bug which affects performance when `batch > 1` in `model.py` and having fixed it elegantly.
+- remove the redundant `clone()` in `model.py`
+  
 **v1.0:**
 
 - make `get_parameters` in `model.py` more robust
