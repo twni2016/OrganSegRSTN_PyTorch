@@ -1,57 +1,20 @@
-# OrganSegRSTN_PyTorch: an end-to-end coarse-to-fine organ segmentation framework in PyTorch
+# OrganSegRSTN_PyTorch: an end-to-end coarse-to-fine organ segmentation framework
 
-**This is a re-implementation of OrganSegRSTN in PyTorch 0.4, Python 3.6**
+**This is a re-implementation of [OrganSegRSTN](https://github.com/198808xc/OrganSegRSTN) in PyTorch 0.4, Python 3.6**
 
-version 1.2 - Nov 9 2018 - by Tianwei Ni, Huangjie Zheng and Lingxi Xie
+v1.2 - Nov 9 2018 - by Tianwei Ni and Lingxi Xie
 
-**NOTE: what's new in version 1.2:**
-- add standard deviation of DSC in `coarse2fine_testing.py`
-- Our codebase is also compatible with PyTorch 0.4.1.
-  
-Original version of OrganSegRSTN is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie. Please see https://github.com/198808xc/OrganSegRSTN for more details.
-
-#### If you use our codes, please cite our paper accordingly:
-
-  **Qihang Yu**, Lingxi Xie, Yan Wang, Yuyin Zhou, Elliot K. Fishman, Alan L. Yuille,
-    "Recurrent Saliency Transformation Network: Incorporating Multi-Stage Visual Cues for Small Organ Segmentation",
-    in IEEE Conference on CVPR, Salt Lake City, Utah, USA, 2018.
-
-https://arxiv.org/abs/1709.04518
-
-###### and possibly, our previous work (the basis of this work):
-
-  **Yuyin Zhou**, Lingxi Xie, Wei Shen, Yan Wang, Elliot K. Fishman, Alan L. Yuille,
-    "A Fixed-Point Model for Pancreas Segmentation in Abdominal CT Scans",
-    in International Conference on MICCAI, Quebec City, Quebec, Canada, 2017.
-
-https://arxiv.org/abs/1612.08230
-
-All the materials released in this library can **ONLY** be used for **RESEARCH** purposes.
-
-The authors and their institution (JHU/JHMI) preserve the copyright and all legal rights of these codes.
+Credit: Original version of [OrganSegRSTN](https://github.com/198808xc/OrganSegRSTN) is implemented in CAFFE by Qihang Yu, Yuyin Zhou and Lingxi Xie.
 
 **Before you start, please note that there is a LAZY MODE,
   which allows you to run the entire framework with ONE click.
   Check the contents before Section 4.3 for details.**
 
-## 0. Differences from [OrganSegRSTN](https://github.com/198808xc/OrganSegRSTN)
-
-Improvements:
-
-- We merge `indiv_training.py`, `joint_training.py` into `training.py`
-- We merge all `*.prototxt` to `model.py`
-- Our code runs almost **twice faster** than original one in CAFFE. 
-- The *minimum* of DSC in test cases is **a little higher** (63.4%) than original minimum (62.8%).
-
-Performance:
-
-- The performance of our PyTorch implementation in NIH Pancreas Dataset is **a little poorer** (84.25% - 84.45%) than original one in CAFFE (84.4% - 84.6%). 
-
 ## 1. Introduction
 
 OrganSegRSTN is a code package for our paper:
 
-  **Qihang Yu**, Lingxi Xie, Yan Wang, Yuyin Zhou, Elliot K. Fishman, Alan L. Yuille,
+  Qihang Yu, Lingxi Xie, Yan Wang, Yuyin Zhou, Elliot K. Fishman, Alan L. Yuille,
     "Recurrent Saliency Transformation Network: Incorporating Multi-Stage Visual Cues for Small Organ Segmentation",
     in IEEE Conference on CVPR, Salt Lake City, Utah, USA, 2018.
 
@@ -100,18 +63,8 @@ It is highly recommended to use one or more modern GPUs for computation.
 
 ## 3. Installation
 
-
-#### 3.1 Prerequisites
-
-###### 3.1.1 Please make sure that your computer is equipped with modern GPUs that support CUDA.
-
-    Without them, you will need 50x more time in both training and testing stages.
-
-###### 3.1.2 Please also make sure that python (we are using 3.6) is installed.
-
-#### 3.2 PyTorch
-
-###### 3.2.1 Download a PyTorch library from https://pytorch.org/ . We are using PyTorch 0.4.0 or 0.4.1.
+- Python 3.6+
+- PyTorch 0.4
 
 ## 4. Usage
 
@@ -237,8 +190,6 @@ Of course, do not use it to evaluate any NIH data, as all cases have been used f
 
 ###### 4.3.4 Multi-GPU training
 
-> Thank Angtian Wang and Yingwei Li for finding bugs on multi-GPU training.
-
 **For your convenience, we provide `training_parallel.py` to support multi-GPU training.** Thus, you just run it instead of `training.py` in the training stage. But you should *pay attention that:*
 
 - image size must be uniform (but normally, the shape of each medical image case is not identical; in NIH dataset, only Z plane could be trained in parallel without padding into same size)
@@ -361,50 +312,41 @@ Each of these models is around 1.07GB, approximately the size of two (coarse+fin
                  (**Accuracy**: coarse-to-fine 84.62%)
 We also attach the log files and testing results for your reference here. Please refer to the `logs/` folder.
 
-## 6. Versions
 
-The current version is v1.2
-
-**v1.1:**
-
-- Thank *Qihang Yu* for finding the bug which affects performance when `batch > 1` in `model.py` and having fixed it elegantly.
-- remove the redundant `clone()` in `model.py`
-  
-**v1.0:**
-
-- make `get_parameters` in `model.py` more robust
-  
-**v0.5:**
-
-- add **`logs/`** which contains training logs and testing results in `FOLD #0`. please see section 5
-- add **RSTN pre-trained models** in section 5
-- add **`oracle_testing.py` & `oracle_fusion.py`** to evaluate fine models. please see 4.6 & 4.7
-
-**v0.4:**
-
-- we introduce **`epoch` hyperparameter** to replace `max_iterations` because the size of datasets varies.
-    - Epoch dict {2, 6, 8} for (S, I, J) is intended for NIH dataset. You may modify it according to your dataset.
-- **Add `training_parallel.py` to support multi-GPU training:**
-    - please see 4.3.4 section for details.
-- Simplify the bilinear weight initialization in ConvTranspose layer (issue [#1](https://github.com/twni2016/OrganSegRSTN_PyTorch/issues/1))
-- **Add `coarse_fusion.py`**
-- `training.py` & `training_parallel.py`: print **coarse/fine/average** loss, giving more information of training loss
-
-**v0.3:** no big improvements.
-
-**v0.2:**
-
--  `utils.py`: two faster functions `post_processing` and `DSC_computation` are re-implemented in C for python3.6
-   -  give instructions in section 4.8.3 on how to compile ` fast_functions.i` to get `_fast_functions.so` for different version of python like 3.5.
--  `training.py` : now trains by *iterations* instead of *epoches*, and learning rate will decay in `J` mode every 10k iterations.
-   -  performance of current version is **84.3%** in NIH dataset, which is *slightly lower* than **84.4-84.6%** in CAFFE implementation.
-
-**v0.1:** init version.
-
-## 7. Contact Information
+## 6. Contact Information
 
 If you encounter any problems in using these codes, please open an issue in this repository.
 You may also contact Tianwei Ni (twni2016@gmail.com) or Lingxi Xie (198808xc@gmail.com).
 
 Thanks for your interest! Have fun!
 
+## 7. Citation
+
+If you use our codes, please cite our [paper](https://arxiv.org/abs/1709.04518) accordingly:
+
+```
+@inproceedings{yu2018recurrent,
+  title={Recurrent saliency transformation network: Incorporating multi-stage visual cues for small organ segmentation},
+  author={Yu, Qihang and Xie, Lingxi and Wang, Yan and Zhou, Yuyin and Fishman, Elliot K and Yuille, Alan L},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  pages={8280--8289},
+  year={2018}
+}
+```
+
+and possibly, our [previous work](https://arxiv.org/abs/1612.08230) (the basis of this work):
+
+```
+@inproceedings{zhou2017fixed,
+  title={A fixed-point model for pancreas segmentation in abdominal CT scans},
+  author={Zhou, Yuyin and Xie, Lingxi and Shen, Wei and Wang, Yan and Fishman, Elliot K and Yuille, Alan L},
+  booktitle={International conference on medical image computing and computer-assisted intervention},
+  pages={693--701},
+  year={2017},
+  organization={Springer}
+}
+```
+
+All the materials released in this library can **ONLY** be used for **RESEARCH** purposes.
+
+The authors and their institution (JHU/JHMI) preserve the copyright and all legal rights of these codes.
