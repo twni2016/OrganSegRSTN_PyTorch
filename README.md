@@ -96,7 +96,7 @@ Please follow these steps to reproduce our results on the NIH pancreas segmentat
     Put labels/ under $DATA_PATH/
     Download the FCN8s pretrained model below and put it under $DATA_PATH/models/pretrained/
 
-[The FCN8s pretrained model in PyTorch](https://drive.google.com/uc?id=0B9P1L--7Wd2vT0FtdThWREhjNkU) - see the explanations in 4.2.3.
+20210414: [The FCN8s pretrained model in PyTorch](https://github.com/wkentaro/pytorch-fcn) the link went error, so you have to pre-train the model using this repo by yourself.
 
 NOTE: If you use other path(s), please modify the variable(s) in run.sh accordingly.
 
