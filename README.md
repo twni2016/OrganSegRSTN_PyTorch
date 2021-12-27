@@ -303,13 +303,8 @@ The 82 cases in the NIH dataset are split into 4 folds:
   * **Fold #2**: testing on Cases 41, 42, ..., 61;
   * **Fold #3**: testing on Cases 62, 63, ..., 82.
 
-We provide the trained models on each plane of `Fold #0`, in total 3 files.
-
-Each of these models is around 1.07GB, approximately the size of two (coarse+fine) FCN models.
-  * **Fold #0**: [[X]](https://drive.google.com/file/d/1mYR_t-mi2gDQX_HBdpoLH8ZKGXi7B1Fn/view?usp=sharing)
-                 [[Y]](https://drive.google.com/file/d/126BZDOUk4__g6YBeUN7s1FUzYhxNYZBL/view?usp=sharing)
-                 [[Z]](https://drive.google.com/file/d/1wLu8jaxmthCiM2qXqpq3-3lQchSNcmdk/view?usp=sharing)
-                 (**Accuracy**: coarse-to-fine 84.62%)
+We provide the trained models on each plane of `Fold #0`, in total 3 files in the [google drive](https://drive.google.com/drive/folders/1hTV-7aFlU9jaGQl32J8nC13vFS4RVoKt?usp=sharing). They have **84.62% accuracy** of  in the coarse-to-fine testing. Each of these models is around 1.07GB, approximately the size of two (coarse+fine) FCN models.
+                 
 We also attach the log files and testing results for your reference here. Please refer to the `logs/` folder.
 
 
